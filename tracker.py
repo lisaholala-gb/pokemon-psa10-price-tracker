@@ -6,7 +6,12 @@ import urllib.error
 import json
 import re
 import statistics
+import smtplib
+import ssl
+
 from collections import Counter
+from email.message import EmailMessage
+from datetime import datetime, timezone
 
 
 # ============================================================
@@ -24,40 +29,31 @@ SEARCH_TERMS = [
 
 
 # ============================================================
-# 30-DAY ACTUAL SOLD BENCHMARK
+# MANUAL 30-DAY SOLD BENCHMARK
 # ============================================================
 #
-# Manually derived from eBay Product Research:
-# UK marketplace
-# 10 Jul 2026 - 9 Aug 2026
-# Explicit PSA 10 Van Gogh Pikachu #085 sales only
-# Delivered price = sold price + postage
+# eBay Product Research
+# UK
+# Clean PSA 10 sold delivered-price benchmark
 #
-# This benchmark does NOT automatically update yet.
+# IMPORTANT:
+# This value does NOT update automatically yet.
 # ============================================================
 
 SOLD_DELIVERED_MEDIAN_GBP = 1918.63
 
-
-# Deal thresholds versus ACTUAL SOLD median
 
 WATCH_PERCENT = 10
 GOOD_DEAL_PERCENT = 15
 STRONG_DEAL_PERCENT = 20
 
 
-print("=" * 72)
-print("POKEMON PSA 10 TRUE DEAL FINDER")
-print(f"Target: {CARD_NAME}")
-print(f"Card ID: {CARD_ID}")
-print("=" * 72)
-
-
 # ============================================================
-# 1. READ GITHUB SECRETS
+# READ GITHUB SECRETS
 # ============================================================
 
 client_id = os.environ["EBAY_CLIENT_ID"]
+
 client_secret = os.environ["EBAY_CLIENT_SECRET"]
 
 buyer_postcode = os.environ.get(
@@ -66,23 +62,46 @@ buyer_postcode = os.environ.get(
 ).strip()
 
 
-if not buyer_postcode:
+email_address = os.environ.get(
+    "EMAIL_ADDRESS",
+    ""
+).strip()
 
-    print()
-    print("WARNING: BUYER_POSTCODE is missing.")
-    print("Shipping estimates may be incomplete.")
-    print()
+
+email_app_password = os.environ.get(
+    "EMAIL_APP_PASSWORD",
+    ""
+).replace(" ", "").strip()
+
+
+force_email_test = (
+    os.environ.get(
+        "FORCE_EMAIL_TEST",
+        ""
+    ).lower()
+    == "true"
+)
+
+
+print("=" * 72)
+print("POKEMON DEAL FINDER")
+print(f"Target: {CARD_NAME}")
+print("=" * 72)
 
 
 # ============================================================
-# 2. GET EBAY PRODUCTION ACCESS TOKEN
+# GET EBAY ACCESS TOKEN
 # ============================================================
 
-credentials = f"{client_id}:{client_secret}"
+credentials = (
+    f"{client_id}:{client_secret}"
+)
 
-encoded_credentials = base64.b64encode(
-    credentials.encode()
-).decode()
+encoded_credentials = (
+    base64.b64encode(
+        credentials.encode()
+    ).decode()
+)
 
 
 token_url = (
@@ -126,42 +145,57 @@ try:
             response.read().decode()
         )
 
+
     access_token = token_result[
         "access_token"
     ]
 
-    print()
-    print("SUCCESS: Connected to eBay Production")
+
+    print(
+        "SUCCESS: Connected to eBay Production"
+    )
 
 
 except urllib.error.HTTPError as error:
 
-    print("ERROR getting eBay access token")
-    print("HTTP status:", error.code)
-    print(error.read().decode())
+    print(
+        "ERROR getting eBay access token"
+    )
 
-    raise
+    print(
+        "HTTP status:",
+        error.code
+    )
 
-
-except Exception as error:
-
-    print("ERROR connecting to eBay Production:")
-    print(error)
+    print(
+        error.read().decode()
+    )
 
     raise
 
 
 # ============================================================
-# 3. NORMALISE TEXT
+# NORMALISE TEXT
 # ============================================================
 
 def normalize(text):
 
     text = str(text).lower()
 
-    text = text.replace("–", "-")
-    text = text.replace("—", "-")
-    text = text.replace("’", "'")
+    text = text.replace(
+        "–",
+        "-"
+    )
+
+    text = text.replace(
+        "—",
+        "-"
+    )
+
+    text = text.replace(
+        "’",
+        "'"
+    )
 
     text = re.sub(
         r"\s+",
@@ -173,7 +207,7 @@ def normalize(text):
 
 
 # ============================================================
-# 4. STRICT TARGET CARD MATCHING
+# CARD MATCHING
 # ============================================================
 
 def is_target_card(item):
@@ -185,6 +219,7 @@ def is_target_card(item):
         )
     )
 
+
     condition = normalize(
         item.get(
             "condition",
@@ -193,20 +228,12 @@ def is_target_card(item):
     )
 
 
-    # --------------------------------------------------------
-    # Must contain Pikachu
-    # --------------------------------------------------------
-
     if "pikachu" not in title:
 
         return False, "not_pikachu"
 
 
-    # --------------------------------------------------------
-    # Must contain card number 085 / SVP085
-    # --------------------------------------------------------
-
-    card_number_patterns = [
+    number_patterns = [
         r"\b085\b",
         r"\b85\b",
         r"\bsvp[\s\-]*085\b",
@@ -219,15 +246,12 @@ def is_target_card(item):
             pattern,
             title
         )
-        for pattern in card_number_patterns
+        for pattern
+        in number_patterns
     ):
 
         return False, "wrong_card_number"
 
-
-    # --------------------------------------------------------
-    # Must explicitly say PSA 10
-    # --------------------------------------------------------
 
     if not re.search(
         r"\bpsa[\s\-]*10\b",
@@ -236,10 +260,6 @@ def is_target_card(item):
 
         return False, "not_psa10"
 
-
-    # --------------------------------------------------------
-    # Must identify Van Gogh / Grey Felt Hat
-    # --------------------------------------------------------
 
     identity_terms = [
         "grey felt hat",
@@ -250,15 +270,12 @@ def is_target_card(item):
 
     if not any(
         term in title
-        for term in identity_terms
+        for term
+        in identity_terms
     ):
 
         return False, "wrong_card_identity"
 
-
-    # --------------------------------------------------------
-    # Exclude competing grading companies
-    # --------------------------------------------------------
 
     other_graders = [
         "ace 10",
@@ -272,15 +289,12 @@ def is_target_card(item):
 
     if any(
         grader in title
-        for grader in other_graders
+        for grader
+        in other_graders
     ):
 
         return False, "other_grader"
 
-
-    # --------------------------------------------------------
-    # Exclude autographs / unusual premium versions
-    # --------------------------------------------------------
 
     special_versions = [
         "signed",
@@ -294,15 +308,12 @@ def is_target_card(item):
 
     if any(
         term in title
-        for term in special_versions
+        for term
+        in special_versions
     ):
 
         return False, "special_version"
 
-
-    # --------------------------------------------------------
-    # Exclude obvious wrong products
-    # --------------------------------------------------------
 
     excluded_terms = [
         "mystery",
@@ -326,15 +337,12 @@ def is_target_card(item):
 
     if any(
         term in title
-        for term in excluded_terms
+        for term
+        in excluded_terms
     ):
 
         return False, "excluded_product"
 
-
-    # --------------------------------------------------------
-    # Exclude multi-card listings
-    # --------------------------------------------------------
 
     multi_item_terms = [
         "bundle",
@@ -349,27 +357,21 @@ def is_target_card(item):
 
     if any(
         term in title
-        for term in multi_item_terms
+        for term
+        in multi_item_terms
     ):
 
         return False, "multi_card_listing"
 
 
-    # --------------------------------------------------------
-    # Must normally be eBay graded condition
-    # --------------------------------------------------------
-
     if (
         condition
-        and "graded" not in condition
+        and "graded"
+        not in condition
     ):
 
         return False, "not_graded_condition"
 
-
-    # --------------------------------------------------------
-    # Only immediately purchasable listings
-    # --------------------------------------------------------
 
     buying_options = item.get(
         "buyingOptions",
@@ -379,15 +381,12 @@ def is_target_card(item):
 
     if (
         buying_options
-        and "FIXED_PRICE" not in buying_options
+        and "FIXED_PRICE"
+        not in buying_options
     ):
 
         return False, "not_fixed_price"
 
-
-    # --------------------------------------------------------
-    # Must have GBP price
-    # --------------------------------------------------------
 
     price_data = item.get(
         "price",
@@ -439,23 +438,15 @@ def is_target_card(item):
 
 
 # ============================================================
-# 5. GET ITEM PRICE
+# PRICE HELPERS
 # ============================================================
 
 def get_item_price(item):
 
     return float(
-        item[
-            "price"
-        ][
-            "value"
-        ]
+        item["price"]["value"]
     )
 
-
-# ============================================================
-# 6. GET SHIPPING COST
-# ============================================================
 
 def get_shipping_cost(item):
 
@@ -465,7 +456,7 @@ def get_shipping_cost(item):
     )
 
 
-    valid_shipping_costs = []
+    costs = []
 
 
     for option in shipping_options:
@@ -487,12 +478,10 @@ def get_shipping_cost(item):
         )
 
 
-        if value is None:
-
-            continue
-
-
-        if currency != "GBP":
+        if (
+            value is None
+            or currency != "GBP"
+        ):
 
             continue
 
@@ -513,88 +502,41 @@ def get_shipping_cost(item):
 
         if cost >= 0:
 
-            valid_shipping_costs.append(
+            costs.append(
                 cost
             )
 
 
-    if not valid_shipping_costs:
+    if not costs:
 
         return None
 
 
-    # Use cheapest available shipping option
-
     return min(
-        valid_shipping_costs
+        costs
     )
 
-
-# ============================================================
-# 7. DELIVERED PRICE
-# ============================================================
 
 def get_delivered_price(item):
 
-    item_price = get_item_price(
+    shipping = get_shipping_cost(
         item
     )
 
 
-    shipping_cost = get_shipping_cost(
-        item
-    )
-
-
-    if shipping_cost is None:
+    if shipping is None:
 
         return None
 
 
     return (
-        item_price
-        + shipping_cost
+        get_item_price(item)
+        + shipping
     )
 
 
 # ============================================================
-# 8. BUILD EBAY END USER CONTEXT HEADER
-# ============================================================
-
-def build_end_user_context():
-
-    if not buyer_postcode:
-
-        return None
-
-
-    location = (
-        "country=GB,"
-        f"zip={buyer_postcode}"
-    )
-
-
-    encoded_location = (
-        urllib.parse.quote(
-            location,
-            safe=""
-        )
-    )
-
-
-    return (
-        "contextualLocation="
-        f"{encoded_location}"
-    )
-
-
-end_user_context = (
-    build_end_user_context()
-)
-
-
-# ============================================================
-# 9. SEARCH EBAY UK
+# SEARCH EBAY UK
 # ============================================================
 
 all_items = {}
@@ -603,6 +545,7 @@ all_items = {}
 for search_term in SEARCH_TERMS:
 
     print()
+
     print(
         f"Searching: {search_term}"
     )
@@ -615,54 +558,73 @@ for search_term in SEARCH_TERMS:
     }
 
 
-    search_url = (
-        "https://api.ebay.com/"
-        "buy/browse/v1/"
-        "item_summary/search?"
-        + urllib.parse.urlencode(
+    query_string = (
+        urllib.parse.urlencode(
             params
         )
     )
 
 
-    search_request = urllib.request.Request(
-        search_url,
-        method="GET",
+    search_url = (
+        "https://api.ebay.com/"
+        "buy/browse/v1/"
+        "item_summary/search?"
+        f"{query_string}"
     )
 
 
-    search_request.add_header(
+    request = urllib.request.Request(
+        search_url,
+        method="GET"
+    )
+
+
+    request.add_header(
         "Authorization",
         f"Bearer {access_token}"
     )
 
 
-    search_request.add_header(
+    request.add_header(
         "X-EBAY-C-MARKETPLACE-ID",
         "EBAY_GB"
     )
 
 
-    if end_user_context:
+    if buyer_postcode:
 
-        search_request.add_header(
+        contextual_location = (
+            urllib.parse.quote(
+                (
+                    "country=GB,"
+                    f"zip={buyer_postcode}"
+                ),
+                safe=""
+            )
+        )
+
+
+        request.add_header(
             "X-EBAY-C-ENDUSERCTX",
-            end_user_context
+            (
+                "contextualLocation="
+                f"{contextual_location}"
+            )
         )
 
 
     try:
 
         with urllib.request.urlopen(
-            search_request
+            request
         ) as response:
 
-            search_result = json.loads(
+            result = json.loads(
                 response.read().decode()
             )
 
 
-        search_items = search_result.get(
+        search_items = result.get(
             "itemSummaries",
             []
         )
@@ -672,8 +634,6 @@ for search_term in SEARCH_TERMS:
             f"Raw results: {len(search_items)}"
         )
 
-
-        # Deduplicate between search phrases
 
         for item in search_items:
 
@@ -691,31 +651,31 @@ for search_term in SEARCH_TERMS:
 
     except urllib.error.HTTPError as error:
 
-        print()
-        print("ERROR searching eBay Browse API")
-        print("HTTP status:", error.code)
-        print(error.read().decode())
+        print(
+            "ERROR searching eBay"
+        )
 
-        raise
+        print(
+            "HTTP status:",
+            error.code
+        )
 
-
-    except Exception as error:
-
-        print()
-        print("ERROR searching eBay:")
-        print(error)
+        print(
+            error.read().decode()
+        )
 
         raise
 
 
 print()
+
 print(
     f"Unique raw listings: {len(all_items)}"
 )
 
 
 # ============================================================
-# 10. EXACT CARD FILTER
+# FILTER EXACT CARD
 # ============================================================
 
 matched_items = []
@@ -738,7 +698,6 @@ for item in all_items.values():
             item
         )
 
-
     else:
 
         rejection_reasons[
@@ -752,7 +711,7 @@ print(
 
 
 # ============================================================
-# 11. SHIPPING COVERAGE
+# SHIPPING COVERAGE
 # ============================================================
 
 known_shipping_items = []
@@ -762,19 +721,16 @@ unknown_shipping_items = []
 
 for item in matched_items:
 
-    shipping_cost = (
-        get_shipping_cost(
-            item
-        )
+    shipping = get_shipping_cost(
+        item
     )
 
 
-    if shipping_cost is None:
+    if shipping is None:
 
         unknown_shipping_items.append(
             item
         )
-
 
     else:
 
@@ -783,39 +739,17 @@ for item in matched_items:
         )
 
 
-print(
-    "Listings with shipping estimate: "
-    f"{len(known_shipping_items)}"
-)
-
-
-print(
-    "Listings with shipping unavailable: "
-    f"{len(unknown_shipping_items)}"
-)
-
-
 # ============================================================
-# 12. CURRENT LIVE MARKET SNAPSHOT
+# LIVE MARKET SNAPSHOT
 # ============================================================
 
-delivered_prices = []
-
-
-for item in known_shipping_items:
-
-    delivered_price = (
-        get_delivered_price(
-            item
-        )
+delivered_prices = [
+    get_delivered_price(
+        item
     )
-
-
-    if delivered_price is not None:
-
-        delivered_prices.append(
-            delivered_price
-        )
+    for item
+    in known_shipping_items
+]
 
 
 print()
@@ -831,21 +765,6 @@ if delivered_prices:
     )
 
 
-    live_average = statistics.mean(
-        delivered_prices
-    )
-
-
-    live_low = min(
-        delivered_prices
-    )
-
-
-    live_high = max(
-        delivered_prices
-    )
-
-
     print(
         f"Listings analysed: "
         f"{len(delivered_prices)}"
@@ -853,26 +772,14 @@ if delivered_prices:
 
 
     print(
-        "Lowest delivered asking price: "
-        f"£{live_low:,.2f}"
-    )
-
-
-    print(
-        "Live delivered median: "
+        f"Live delivered median: "
         f"£{live_median:,.2f}"
     )
 
 
     print(
-        "Live delivered average: "
-        f"£{live_average:,.2f}"
-    )
-
-
-    print(
-        "Highest delivered asking price: "
-        f"£{live_high:,.2f}"
+        f"Lowest delivered price: "
+        f"£{min(delivered_prices):,.2f}"
     )
 
 
@@ -881,30 +788,15 @@ else:
     live_median = None
 
     print(
-        "No usable delivered-price listings found."
+        "No usable shipping data."
     )
 
 
 # ============================================================
-# 13. ACTUAL SOLD MARKET BENCHMARK
+# DEAL THRESHOLDS
 # ============================================================
 
-print()
-print("=" * 72)
-print("30-DAY ACTUAL SOLD MARKET")
-print("=" * 72)
-
-
-print(
-    "Clean PSA 10 delivered median:"
-)
-
-print(
-    f"£{SOLD_DELIVERED_MEDIAN_GBP:,.2f}"
-)
-
-
-watch_threshold = (
+watch_price = (
     SOLD_DELIVERED_MEDIAN_GBP
     * (
         1
@@ -913,7 +805,7 @@ watch_threshold = (
 )
 
 
-good_threshold = (
+good_price = (
     SOLD_DELIVERED_MEDIAN_GBP
     * (
         1
@@ -922,7 +814,7 @@ good_threshold = (
 )
 
 
-strong_threshold = (
+strong_price = (
     SOLD_DELIVERED_MEDIAN_GBP
     * (
         1
@@ -932,34 +824,34 @@ strong_threshold = (
 
 
 print()
+print("=" * 72)
+print("30-DAY SOLD MARKET BENCHMARK")
+print("=" * 72)
 
 print(
-    f"WATCH (-10%): "
-    f"£{watch_threshold:,.2f}"
+    f"Sold delivered median: "
+    f"£{SOLD_DELIVERED_MEDIAN_GBP:,.2f}"
 )
 
-
 print(
-    f"GOOD DEAL (-15%): "
-    f"£{good_threshold:,.2f}"
+    f"WATCH threshold (-10%): "
+    f"£{watch_price:,.2f}"
 )
 
+print(
+    f"GOOD DEAL threshold (-15%): "
+    f"£{good_price:,.2f}"
+)
 
 print(
-    f"STRONG DEAL (-20%): "
-    f"£{strong_threshold:,.2f}"
+    f"STRONG DEAL threshold (-20%): "
+    f"£{strong_price:,.2f}"
 )
 
 
 # ============================================================
-# 14. TRUE DEAL WATCH
+# TRUE DEAL WATCH
 # ============================================================
-
-print()
-print("=" * 72)
-print("TRUE DEAL WATCH")
-print("=" * 72)
-
 
 deal_candidates = []
 
@@ -973,12 +865,7 @@ for item in known_shipping_items:
     )
 
 
-    if delivered_price is None:
-
-        continue
-
-
-    discount_percent = (
+    discount = (
         (
             SOLD_DELIVERED_MEDIAN_GBP
             - delivered_price
@@ -987,53 +874,44 @@ for item in known_shipping_items:
     ) * 100
 
 
-    if discount_percent >= WATCH_PERCENT:
+    if discount >= WATCH_PERCENT:
 
         deal_candidates.append(
             (
                 delivered_price,
-                discount_percent,
+                discount,
                 item
             )
         )
 
 
 deal_candidates.sort(
-    key=lambda result: result[0]
+    key=lambda x: x[0]
 )
+
+
+print()
+print("=" * 72)
+print("TRUE DEAL WATCH")
+print("=" * 72)
 
 
 if not deal_candidates:
 
-    print()
     print(
-        "No current listings are at least "
-        "10% below the 30-day actual sold median."
+        "No qualifying deals found."
     )
 
 
 for (
     delivered_price,
-    discount_percent,
+    discount,
     item
 ) in deal_candidates:
 
-    item_price = (
-        get_item_price(
-            item
-        )
-    )
-
-
-    shipping_cost = (
-        get_shipping_cost(
-            item
-        )
-    )
-
 
     if (
-        discount_percent
+        discount
         >= STRONG_DEAL_PERCENT
     ):
 
@@ -1043,7 +921,7 @@ for (
 
 
     elif (
-        discount_percent
+        discount
         >= GOOD_DEAL_PERCENT
     ):
 
@@ -1059,212 +937,349 @@ for (
         )
 
 
-    title = item.get(
-        "title",
-        "No title"
-    )
-
-
-    item_id = item.get(
-        "itemId",
-        ""
-    )
-
-
-    item_url = item.get(
-        "itemWebUrl",
-        ""
-    )
-
-
     print()
-    print("-" * 72)
 
     print(
         deal_level
     )
 
-
     print(
         f"Item price: "
-        f"£{item_price:,.2f}"
+        f"£{get_item_price(item):,.2f}"
     )
-
 
     print(
         f"Shipping: "
-        f"£{shipping_cost:,.2f}"
+        f"£{get_shipping_cost(item):,.2f}"
     )
 
-
     print(
-        f"DELIVERED PRICE: "
+        f"Delivered: "
         f"£{delivered_price:,.2f}"
     )
 
+    print(
+        f"Discount vs sold median: "
+        f"{discount:.1f}%"
+    )
 
     print(
-        f"30-day sold median: "
-        f"£{SOLD_DELIVERED_MEDIAN_GBP:,.2f}"
+        f"Title: "
+        f"{item.get('title', '')}"
     )
-
 
     print(
-        "Discount vs actual sold market: "
-        f"{discount_percent:.1f}%"
-    )
-
-
-    print(
-        f"Title: {title}"
-    )
-
-
-    print(
-        f"Item ID: {item_id}"
-    )
-
-
-    print(
-        f"URL: {item_url}"
-    )
-
-
-# ============================================================
-# 15. CHEAPEST CURRENT LISTINGS
-# ============================================================
-
-print()
-print("=" * 72)
-print("CHEAPEST CURRENT LISTINGS")
-print("=" * 72)
-
-
-sorted_current_items = sorted(
-    known_shipping_items,
-    key=lambda item: (
-        get_delivered_price(item)
-        if get_delivered_price(item)
-        is not None
-        else float("inf")
-    )
-)
-
-
-for number, item in enumerate(
-    sorted_current_items[:5],
-    start=1
-):
-
-    item_price = (
-        get_item_price(
-            item
-        )
-    )
-
-
-    shipping_cost = (
-        get_shipping_cost(
-            item
-        )
-    )
-
-
-    delivered_price = (
-        get_delivered_price(
-            item
-        )
-    )
-
-
-    difference_percent = (
-        (
-            delivered_price
-            - SOLD_DELIVERED_MEDIAN_GBP
-        )
-        / SOLD_DELIVERED_MEDIAN_GBP
-    ) * 100
-
-
-    print()
-    print(
-        f"{number}. "
-        f"{item.get('title', 'No title')}"
-    )
-
-
-    print(
-        f"   Item: £{item_price:,.2f}"
-    )
-
-
-    print(
-        f"   Shipping: £{shipping_cost:,.2f}"
-    )
-
-
-    print(
-        f"   Delivered: £{delivered_price:,.2f}"
-    )
-
-
-    print(
-        "   Vs sold median: "
-        f"{difference_percent:+.1f}%"
-    )
-
-
-    print(
-        f"   URL: "
+        f"URL: "
         f"{item.get('itemWebUrl', '')}"
     )
 
 
 # ============================================================
-# 16. SHIPPING UNKNOWN
+# EMAIL BODY
 # ============================================================
 
-if unknown_shipping_items:
+def build_email_body():
+
+    lines = []
+
+
+    lines.append(
+        "Pokemon Deal Tracker"
+    )
+
+    lines.append(
+        ""
+    )
+
+    lines.append(
+        CARD_NAME
+    )
+
+    lines.append(
+        ""
+    )
+
+
+    lines.append(
+        "30-day sold delivered median: "
+        f"£{SOLD_DELIVERED_MEDIAN_GBP:,.2f}"
+    )
+
+
+    if live_median is not None:
+
+        lines.append(
+            "Current live delivered median: "
+            f"£{live_median:,.2f}"
+        )
+
+
+    lines.append(
+        ""
+    )
+
+
+    if deal_candidates:
+
+        lines.append(
+            f"Deals found: "
+            f"{len(deal_candidates)}"
+        )
+
+        lines.append(
+            ""
+        )
+
+
+        for (
+            delivered_price,
+            discount,
+            item
+        ) in deal_candidates:
+
+
+            if (
+                discount
+                >= STRONG_DEAL_PERCENT
+            ):
+
+                level = (
+                    "STRONG DEAL"
+                )
+
+
+            elif (
+                discount
+                >= GOOD_DEAL_PERCENT
+            ):
+
+                level = (
+                    "GOOD DEAL"
+                )
+
+
+            else:
+
+                level = (
+                    "WATCH"
+                )
+
+
+            lines.append(
+                "=" * 50
+            )
+
+
+            lines.append(
+                level
+            )
+
+
+            lines.append(
+                f"Item: "
+                f"£{get_item_price(item):,.2f}"
+            )
+
+
+            lines.append(
+                f"Shipping: "
+                f"£{get_shipping_cost(item):,.2f}"
+            )
+
+
+            lines.append(
+                f"Delivered: "
+                f"£{delivered_price:,.2f}"
+            )
+
+
+            lines.append(
+                "Discount vs sold market: "
+                f"{discount:.1f}%"
+            )
+
+
+            lines.append(
+                ""
+            )
+
+
+            lines.append(
+                item.get(
+                    "title",
+                    ""
+                )
+            )
+
+
+            lines.append(
+                ""
+            )
+
+
+            lines.append(
+                item.get(
+                    "itemWebUrl",
+                    ""
+                )
+            )
+
+
+            lines.append(
+                ""
+            )
+
+
+    else:
+
+        lines.append(
+            "No qualifying deals were found."
+        )
+
+
+    lines.append(
+        ""
+    )
+
+
+    lines.append(
+        "Run time UTC: "
+        + datetime.now(
+            timezone.utc
+        ).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+    )
+
+
+    return "\n".join(
+        lines
+    )
+
+
+# ============================================================
+# SEND EMAIL
+# ============================================================
+
+should_send_email = (
+    bool(deal_candidates)
+    or force_email_test
+)
+
+
+if should_send_email:
 
     print()
     print("=" * 72)
-    print("NOT SCORED - SHIPPING UNKNOWN")
+    print("EMAIL ALERT")
     print("=" * 72)
 
 
-    for item in sorted(
-        unknown_shipping_items,
-        key=get_item_price
+    if (
+        not email_address
+        or not email_app_password
     ):
 
-        print()
-
-        print(
-            f"Item price: "
-            f"£{get_item_price(item):,.2f}"
+        raise RuntimeError(
+            "EMAIL_ADDRESS or EMAIL_APP_PASSWORD is missing"
         )
 
 
-        print(
-            f"Title: "
-            f"{item.get('title', 'No title')}"
+    message = EmailMessage()
+
+
+    if deal_candidates:
+
+        best_discount = max(
+            deal[1]
+            for deal
+            in deal_candidates
         )
 
 
-        print(
-            "Reason: eBay did not return a usable "
-            "GBP shipping estimate."
+        subject = (
+            "Pokemon Deal Alert - "
+            f"{best_discount:.1f}% below sold market"
         )
 
 
-        print(
-            f"URL: "
-            f"{item.get('itemWebUrl', '')}"
+    else:
+
+        subject = (
+            "Pokemon Deal Tracker - TEST EMAIL"
         )
+
+
+    message[
+        "Subject"
+    ] = subject
+
+
+    message[
+        "From"
+    ] = email_address
+
+
+    message[
+        "To"
+    ] = email_address
+
+
+    message.set_content(
+        build_email_body()
+    )
+
+
+    context = (
+        ssl.create_default_context()
+    )
+
+
+    try:
+
+        with smtplib.SMTP_SSL(
+            "smtp.gmail.com",
+            465,
+            context=context
+        ) as server:
+
+            server.login(
+                email_address,
+                email_app_password
+            )
+
+
+            server.send_message(
+                message
+            )
+
+
+        print(
+            "SUCCESS: Email alert sent."
+        )
+
+
+    except Exception as error:
+
+        print(
+            "ERROR sending email:"
+        )
+
+        print(error)
+
+        raise
+
+
+else:
+
+    print()
+    print(
+        "No deal found. No email sent."
+    )
 
 
 # ============================================================
-# 17. FILTER REPORT
+# FILTER REPORT
 # ============================================================
 
 print()
@@ -1273,61 +1288,42 @@ print("FILTER REPORT")
 print("=" * 72)
 
 
-if rejection_reasons:
-
-    for reason, count in sorted(
-        rejection_reasons.items()
-    ):
-
-        print(
-            f"{reason}: {count}"
-        )
-
-
-else:
+for reason, count in sorted(
+    rejection_reasons.items()
+):
 
     print(
-        "No listings rejected."
+        f"{reason}: {count}"
     )
 
-
-# ============================================================
-# 18. IMPORTANT NOTES
-# ============================================================
 
 print()
 print("=" * 72)
 print("IMPORTANT")
 print("=" * 72)
 
-
 print(
-    "1. Live prices are current eBay asking prices."
+    "1. Deal score uses delivered price."
 )
 
-
 print(
-    "2. Delivered price = item price + available "
-    "eBay shipping estimate."
+    "2. Deal score compares against the "
+    "manual 30-day sold benchmark."
 )
 
-
 print(
-    "3. Deal ratings compare against the manually "
-    "calculated 30-day actual sold delivered median."
-)
-
-
-print(
-    "4. The £1,918.63 sold benchmark does not "
+    "3. The sold benchmark does not "
     "automatically refresh yet."
 )
 
-
 print(
-    "5. No eBay marketplace price history is saved."
+    "4. No eBay price history is saved."
 )
 
+print(
+    "5. Email is sent only when a deal "
+    "is found, unless test mode is enabled."
+)
 
 print()
 print(
