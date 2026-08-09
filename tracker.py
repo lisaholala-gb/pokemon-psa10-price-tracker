@@ -6,11 +6,11 @@ import urllib.error
 import json
 
 
-print("Pokemon PSA 10 Price Tracker")
+print("Pokemon PSA 10 Price Tracker - eBay UK Production")
 
 
 # ============================================================
-# 1. READ EBAY CREDENTIALS FROM GITHUB SECRETS
+# 1. READ PRODUCTION CREDENTIALS FROM GITHUB SECRETS
 # ============================================================
 
 client_id = os.environ["EBAY_CLIENT_ID"]
@@ -24,10 +24,10 @@ encoded_credentials = base64.b64encode(
 
 
 # ============================================================
-# 2. GET EBAY SANDBOX ACCESS TOKEN
+# 2. GET EBAY PRODUCTION ACCESS TOKEN
 # ============================================================
 
-token_url = "https://api.sandbox.ebay.com/identity/v1/oauth2/token"
+token_url = "https://api.ebay.com/identity/v1/oauth2/token"
 
 token_data = urllib.parse.urlencode({
     "grant_type": "client_credentials",
@@ -55,39 +55,35 @@ token_request.add_header(
 try:
 
     with urllib.request.urlopen(token_request) as response:
-
         token_result = json.loads(
             response.read().decode()
         )
 
     access_token = token_result["access_token"]
 
-    print("SUCCESS: Connected to eBay Sandbox")
-    print("Access token received securely")
+    print("SUCCESS: Connected to eBay Production")
+    print("Production access token received securely")
 
 
 except urllib.error.HTTPError as error:
 
-    print("ERROR getting eBay access token")
+    print("ERROR getting Production access token")
     print("HTTP status:", error.code)
-
-    error_body = error.read().decode()
-
-    print(error_body)
+    print(error.read().decode())
 
     raise
 
 
 except Exception as error:
 
-    print("ERROR connecting to eBay:")
+    print("ERROR connecting to eBay Production:")
     print(error)
 
     raise
 
 
 # ============================================================
-# 3. SEARCH EBAY BROWSE API
+# 3. SEARCH REAL EBAY UK LISTINGS
 # ============================================================
 
 search_term = "Pokemon PSA 10"
@@ -95,8 +91,8 @@ search_term = "Pokemon PSA 10"
 query = urllib.parse.quote(search_term)
 
 search_url = (
-    "https://api.sandbox.ebay.com/buy/browse/v1/item_summary/search"
-    f"?q={query}&limit=10"
+    "https://api.ebay.com/buy/browse/v1/item_summary/search"
+    f"?q={query}&limit=20"
 )
 
 
@@ -117,46 +113,33 @@ search_request.add_header(
 
 
 print()
-print(f"Searching eBay for: {search_term}")
-print("----------------------------------")
+print(f"Searching eBay UK for: {search_term}")
+print("----------------------------------------")
 
 
 # ============================================================
-# 4. READ SEARCH RESULTS
+# 4. READ REAL LISTINGS
 # ============================================================
 
 try:
 
     with urllib.request.urlopen(search_request) as response:
-
         search_result = json.loads(
             response.read().decode()
         )
-
 
     items = search_result.get(
         "itemSummaries",
         []
     )
 
-
     print(f"Listings found: {len(items)}")
     print()
 
 
-    # --------------------------------------------------------
-    # No Sandbox results
-    # --------------------------------------------------------
-
     if not items:
+        print("No matching listings found.")
 
-        print("No listings found in eBay Sandbox.")
-        print("This can be normal because Sandbox inventory is limited.")
-
-
-    # --------------------------------------------------------
-    # Display listings
-    # --------------------------------------------------------
 
     for number, item in enumerate(items, start=1):
 
@@ -164,7 +147,6 @@ try:
             "title",
             "No title"
         )
-
 
         price_data = item.get(
             "price",
@@ -181,6 +163,10 @@ try:
             ""
         )
 
+        condition = item.get(
+            "condition",
+            "N/A"
+        )
 
         item_url = item.get(
             "itemWebUrl",
@@ -189,37 +175,24 @@ try:
 
 
         print(f"{number}. {title}")
-
-        print(
-            f"   Price: {price} {currency}"
-        )
-
-        print(
-            f"   URL: {item_url}"
-        )
-
+        print(f"   Price: {price} {currency}")
+        print(f"   Condition: {condition}")
+        print(f"   URL: {item_url}")
         print()
 
 
-# ============================================================
-# 5. SHOW API ERRORS
-# ============================================================
-
 except urllib.error.HTTPError as error:
 
-    print("ERROR searching eBay Browse API")
+    print("ERROR searching eBay Production Browse API")
     print("HTTP status:", error.code)
-
-    error_body = error.read().decode()
-
-    print(error_body)
+    print(error.read().decode())
 
     raise
 
 
 except Exception as error:
 
-    print("ERROR searching eBay:")
+    print("ERROR searching eBay Production:")
     print(error)
 
     raise
