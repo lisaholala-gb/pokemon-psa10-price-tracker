@@ -36,7 +36,6 @@ token_data = urllib.parse.urlencode({
     "scope": "https://api.ebay.com/oauth/api_scope"
 }).encode()
 
-
 token_request = urllib.request.Request(
     token_url,
     data=token_data,
@@ -53,9 +52,7 @@ token_request.add_header(
     "application/x-www-form-urlencoded"
 )
 
-
 try:
-
     with urllib.request.urlopen(token_request) as response:
         token_result = json.loads(
             response.read().decode()
@@ -66,17 +63,13 @@ try:
     print("SUCCESS: Connected to eBay Production")
     print("Production access token received securely")
 
-
 except urllib.error.HTTPError as error:
-
     print("ERROR getting Production access token")
     print("HTTP status:", error.code)
     print(error.read().decode())
     raise
 
-
 except Exception as error:
-
     print("ERROR connecting to eBay Production:")
     print(error)
     raise
@@ -95,7 +88,6 @@ search_url = (
     f"?q={query}&limit=20"
 )
 
-
 search_request = urllib.request.Request(
     search_url,
     method="GET"
@@ -111,7 +103,6 @@ search_request.add_header(
     "EBAY_GB"
 )
 
-
 print()
 print(f"Searching eBay UK for: {search_term}")
 print("----------------------------------------")
@@ -122,7 +113,6 @@ print("----------------------------------------")
 # ============================================================
 
 try:
-
     with urllib.request.urlopen(search_request) as response:
         search_result = json.loads(
             response.read().decode()
@@ -136,32 +126,73 @@ try:
     print(f"Listings found: {len(items)}")
     print()
 
-
 except urllib.error.HTTPError as error:
-
     print("ERROR searching eBay Production Browse API")
     print("HTTP status:", error.code)
     print(error.read().decode())
     raise
 
-
 except Exception as error:
-
     print("ERROR searching eBay Production:")
     print(error)
     raise
 
 
 # ============================================================
-# 5. PREPARE PRICE HISTORY CSV
+# 5. DISPLAY LISTINGS
 # ============================================================
 
-csv_file = "prices.csv"
+if not items:
+    print("No matching listings found.")
+
+for number, item in enumerate(items, start=1):
+
+    title = item.get(
+        "title",
+        "No title"
+    )
+
+    price_data = item.get(
+        "price",
+        {}
+    )
+
+    price = price_data.get(
+        "value",
+        "N/A"
+    )
+
+    currency = price_data.get(
+        "currency",
+        ""
+    )
+
+    condition = item.get(
+        "condition",
+        "N/A"
+    )
+
+    item_url = item.get(
+        "itemWebUrl",
+        "No URL"
+    )
+
+    print(f"{number}. {title}")
+    print(f"   Price: {price} {currency}")
+    print(f"   Condition: {condition}")
+    print(f"   URL: {item_url}")
+    print()
+
+
+# ============================================================
+# 6. SAVE LISTINGS TO CSV PRICE HISTORY
+# ============================================================
+
+csv_file = "price_history.csv"
 
 file_exists = os.path.isfile(csv_file)
 
-today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
+timestamp = datetime.now(timezone.utc).isoformat()
 
 with open(
     csv_file,
@@ -172,25 +203,19 @@ with open(
 
     writer = csv.writer(file)
 
-    # Create column names only when the CSV is first created
     if not file_exists:
-
         writer.writerow([
-            "date",
+            "timestamp",
+            "search_term",
             "item_id",
             "title",
             "price",
             "currency",
             "condition",
-            "url"
+            "item_url"
         ])
 
-
-    # ========================================================
-    # 6. SAVE EACH LISTING
-    # ========================================================
-
-    for number, item in enumerate(items, start=1):
+    for item in items:
 
         item_id = item.get(
             "itemId",
@@ -218,4 +243,27 @@ with open(
         )
 
         condition = item.get(
-            "
+            "condition",
+            "N/A"
+        )
+
+        item_url = item.get(
+            "itemWebUrl",
+            ""
+        )
+
+        writer.writerow([
+            timestamp,
+            search_term,
+            item_id,
+            title,
+            price,
+            currency,
+            condition,
+            item_url
+        ])
+
+
+print("----------------------------------------")
+print(f"SUCCESS: Saved {len(items)} listings to {csv_file}")
+print("Tracker completed successfully.")
