@@ -14,7 +14,6 @@ from collections import Counter
 # ============================================================
 
 CARD_ID = "pikachu-grey-felt-hat-085-van-gogh-psa10"
-
 CARD_NAME = "Pikachu with Grey Felt Hat #085 PSA 10"
 
 SEARCH_TERMS = [
@@ -22,16 +21,20 @@ SEARCH_TERMS = [
     "Pikachu Van Gogh 085 PSA 10",
 ]
 
+DEAL_WATCH_PERCENT = 10
+GOOD_DEAL_PERCENT = 15
+STRONG_DEAL_PERCENT = 20
+
 
 print("=" * 70)
-print("Pokemon PSA 10 Price Tracker")
+print("POKEMON PSA 10 DEAL WATCH")
 print(f"Target: {CARD_NAME}")
 print(f"Card ID: {CARD_ID}")
 print("=" * 70)
 
 
 # ============================================================
-# 1. READ EBAY PRODUCTION CREDENTIALS
+# 1. EBAY CREDENTIALS
 # ============================================================
 
 client_id = os.environ["EBAY_CLIENT_ID"]
@@ -71,8 +74,8 @@ token_request.add_header(
     "application/x-www-form-urlencoded",
 )
 
-
 try:
+
     with urllib.request.urlopen(token_request) as response:
         token_result = json.loads(
             response.read().decode()
@@ -84,19 +87,21 @@ try:
     print("SUCCESS: Connected to eBay Production")
 
 except urllib.error.HTTPError as error:
+
     print("ERROR getting eBay access token")
     print("HTTP status:", error.code)
     print(error.read().decode())
     raise
 
 except Exception as error:
+
     print("ERROR connecting to eBay:")
     print(error)
     raise
 
 
 # ============================================================
-# 3. NORMALISE TEXT
+# 3. TEXT NORMALISATION
 # ============================================================
 
 def normalize(text):
@@ -117,30 +122,24 @@ def normalize(text):
 
 
 # ============================================================
-# 4. STRICT CARD MATCHING
+# 4. EXACT CARD MATCHING
 # ============================================================
 
 def is_target_card(item):
 
-    title_original = item.get(
-        "title",
-        ""
+    title = normalize(
+        item.get("title", "")
     )
-
-    title = normalize(title_original)
 
     condition = normalize(
-        item.get(
-            "condition",
-            ""
-        )
+        item.get("condition", "")
     )
 
-    # Must be Pikachu
+    # Pikachu required
     if "pikachu" not in title:
         return False, "not_pikachu"
 
-    # Must contain card number 085 / SVP085 / SVP 085
+    # Card number required
     number_patterns = [
         r"\b085\b",
         r"\b85\b",
@@ -154,14 +153,14 @@ def is_target_card(item):
     ):
         return False, "wrong_card_number"
 
-    # Must explicitly be PSA 10
+    # PSA 10 required
     if not re.search(
         r"\bpsa[\s\-]*10\b",
         title
     ):
         return False, "not_psa10"
 
-    # Must identify Grey Felt Hat / Van Gogh
+    # Van Gogh / Grey Felt Hat identity required
     identity_terms = [
         "grey felt hat",
         "gray felt hat",
@@ -174,13 +173,13 @@ def is_target_card(item):
     ):
         return False, "wrong_card_identity"
 
-    # Exclude other grading companies
+    # Exclude other graders
     other_graders = [
         "cgc",
         "bgs",
         "beckett",
-        "ace 10",
         "ace grading",
+        "ace 10",
         "sgc",
     ]
 
@@ -190,7 +189,23 @@ def is_target_card(item):
     ):
         return False, "other_grader"
 
-    # Exclude obvious wrong product types
+    # Exclude special / altered versions
+    special_versions = [
+        "signed",
+        "signature",
+        "autograph",
+        "veronica taylor",
+        "error card",
+        "misprint",
+    ]
+
+    if any(
+        term in title
+        for term in special_versions
+    ):
+        return False, "special_version"
+
+    # Exclude junk / accessories
     excluded_terms = [
         "mystery",
         "proxy",
@@ -204,8 +219,6 @@ def is_target_card(item):
         "art print",
         "sticker",
         "booster",
-        "mystery pack",
-        "mystery slab",
         "case only",
         "protector only",
         "display only",
@@ -218,7 +231,7 @@ def is_target_card(item):
     ):
         return False, "excluded_product"
 
-    # Avoid obvious multi-card lots / bundles
+    # Exclude multi-card listings
     multi_item_terms = [
         "bundle",
         "lot of",
@@ -235,11 +248,20 @@ def is_target_card(item):
     ):
         return False, "multi_card_listing"
 
-    # eBay condition should normally say graded
+    # Condition should be graded if supplied
     if condition and "graded" not in condition:
         return False, "not_graded_condition"
 
-    # Must have usable GBP price
+    # Fixed-price listings only
+    buying_options = item.get(
+        "buyingOptions",
+        []
+    )
+
+    if buying_options and "FIXED_PRICE" not in buying_options:
+        return False, "not_fixed_price"
+
+    # GBP price required
     price_data = item.get(
         "price",
         {}
@@ -261,9 +283,13 @@ def is_target_card(item):
         return False, "not_gbp"
 
     try:
-        price = float(price_value)
+
+        price = float(
+            price_value
+        )
 
     except (ValueError, TypeError):
+
         return False, "invalid_price"
 
     if price <= 0:
@@ -309,6 +335,7 @@ for search_term in SEARCH_TERMS:
     )
 
     try:
+
         with urllib.request.urlopen(
             search_request
         ) as response:
@@ -326,7 +353,6 @@ for search_term in SEARCH_TERMS:
             f"Raw results: {len(search_items)}"
         )
 
-        # Deduplicate the two searches using item ID
         for item in search_items:
 
             item_id = item.get(
@@ -352,60 +378,60 @@ for search_term in SEARCH_TERMS:
 
 print()
 print(
-    f"Unique raw listings found: {len(all_items)}"
+    f"Unique raw listings: {len(all_items)}"
 )
 
 
 # ============================================================
-# 6. FILTER EXACT CARD
+# 6. EXACT CARD FILTER
 # ============================================================
 
 matched_items = []
-
 rejection_reasons = Counter()
-
 
 for item in all_items.values():
 
-    matched, reason = is_target_card(item)
+    matched, reason = is_target_card(
+        item
+    )
 
     if matched:
-        matched_items.append(item)
+
+        matched_items.append(
+            item
+        )
 
     else:
-        rejection_reasons[reason] += 1
+
+        rejection_reasons[
+            reason
+        ] += 1
 
 
 print(
-    f"Exact card matches before price cleaning: {len(matched_items)}"
+    f"Exact card matches: {len(matched_items)}"
 )
 
 
 # ============================================================
-# 7. GET PRICES
+# 7. PRICE HELPER
 # ============================================================
 
-raw_prices = []
+def get_price(item):
 
-for item in matched_items:
+    return float(
+        item["price"]["value"]
+    )
 
-    try:
-        price = float(
-            item["price"]["value"]
-        )
 
-        raw_prices.append(price)
-
-    except (
-        KeyError,
-        ValueError,
-        TypeError
-    ):
-        pass
+raw_prices = [
+    get_price(item)
+    for item in matched_items
+]
 
 
 # ============================================================
-# 8. PERCENTILE HELPER
+# 8. PERCENTILE
 # ============================================================
 
 def percentile(values, percent):
@@ -422,7 +448,9 @@ def percentile(values, percent):
         len(values) - 1
     ) * percent
 
-    lower_index = int(position)
+    lower_index = int(
+        position
+    )
 
     upper_index = min(
         lower_index + 1,
@@ -430,7 +458,8 @@ def percentile(values, percent):
     )
 
     fraction = (
-        position - lower_index
+        position
+        - lower_index
     )
 
     lower_value = values[
@@ -452,19 +481,18 @@ def percentile(values, percent):
 
 
 # ============================================================
-# 9. IQR OUTLIER FILTER
+# 9. BUILD CLEAN MARKET BASELINE
 # ============================================================
 
-clean_items = []
-
-outlier_items = []
-
-lower_bound = None
-upper_bound = None
+baseline_items = []
+low_outlier_items = []
+high_outlier_items = []
 
 q1 = None
 q3 = None
 iqr = None
+lower_bound = None
+upper_bound = None
 
 
 if len(raw_prices) >= 4:
@@ -492,111 +520,51 @@ if len(raw_prices) >= 4:
 
     for item in matched_items:
 
-        price = float(
-            item["price"]["value"]
+        price = get_price(
+            item
         )
 
-        if (
-            lower_bound
-            <= price
-            <= upper_bound
-        ):
-            clean_items.append(
+        if price < lower_bound:
+
+            low_outlier_items.append(
+                item
+            )
+
+        elif price > upper_bound:
+
+            high_outlier_items.append(
                 item
             )
 
         else:
-            outlier_items.append(
+
+            baseline_items.append(
                 item
             )
 
 else:
 
-    # Not enough data for reliable IQR.
-    clean_items = matched_items.copy()
+    baseline_items = (
+        matched_items.copy()
+    )
+
+
+# Safety fallback
+if not baseline_items:
+
+    baseline_items = (
+        matched_items.copy()
+    )
+
+
+baseline_prices = [
+    get_price(item)
+    for item in baseline_items
+]
 
 
 # ============================================================
-# 10. SORT CLEAN LISTINGS BY PRICE
-# ============================================================
-
-clean_items.sort(
-    key=lambda item: float(
-        item["price"]["value"]
-    )
-)
-
-
-# ============================================================
-# 11. DISPLAY CLEAN LISTINGS
-# ============================================================
-
-print()
-print("=" * 70)
-print("CLEAN VAN GOGH PIKACHU PSA 10 LISTINGS")
-print("=" * 70)
-
-
-clean_prices = []
-
-
-for number, item in enumerate(
-    clean_items,
-    start=1
-):
-
-    title = item.get(
-        "title",
-        "No title"
-    )
-
-    item_id = item.get(
-        "itemId",
-        ""
-    )
-
-    price = float(
-        item["price"]["value"]
-    )
-
-    condition = item.get(
-        "condition",
-        "N/A"
-    )
-
-    item_url = item.get(
-        "itemWebUrl",
-        ""
-    )
-
-    clean_prices.append(
-        price
-    )
-
-    print()
-    print(
-        f"{number}. {title}"
-    )
-
-    print(
-        f"   Price: £{price:,.2f}"
-    )
-
-    print(
-        f"   Condition: {condition}"
-    )
-
-    print(
-        f"   Item ID: {item_id}"
-    )
-
-    print(
-        f"   URL: {item_url}"
-    )
-
-
-# ============================================================
-# 12. MARKET SNAPSHOT
+# 10. MARKET SNAPSHOT
 # ============================================================
 
 print()
@@ -609,161 +577,294 @@ print(
 )
 
 print(
-    f"Raw exact matches: {len(matched_items)}"
+    f"Exact matches: {len(matched_items)}"
 )
 
 print(
-    f"Outliers removed: {len(outlier_items)}"
+    f"Normal market listings: {len(baseline_items)}"
 )
 
 print(
-    f"Clean listings: {len(clean_items)}"
+    f"Low-price outliers: {len(low_outlier_items)}"
+)
+
+print(
+    f"High-price outliers removed: {len(high_outlier_items)}"
 )
 
 
-if clean_prices:
+if baseline_prices:
 
-    lowest_price = min(
-        clean_prices
+    market_low = min(
+        baseline_prices
     )
 
-    highest_price = max(
-        clean_prices
+    market_median = statistics.median(
+        baseline_prices
     )
 
-    median_price = statistics.median(
-        clean_prices
+    market_average = statistics.mean(
+        baseline_prices
     )
 
-    average_price = statistics.mean(
-        clean_prices
-    )
-
-    q1_clean = percentile(
-        clean_prices,
+    market_q1 = percentile(
+        baseline_prices,
         0.25
     )
 
-    q3_clean = percentile(
-        clean_prices,
+    market_q3 = percentile(
+        baseline_prices,
         0.75
     )
 
+    market_high = max(
+        baseline_prices
+    )
+
     print()
 
     print(
-        f"Lowest asking price: £{lowest_price:,.2f}"
+        f"Lowest normal asking price: £{market_low:,.2f}"
     )
 
     print(
-        f"25th percentile: £{q1_clean:,.2f}"
+        f"Q1 / 25th percentile: £{market_q1:,.2f}"
     )
 
     print(
-        f"Median asking price: £{median_price:,.2f}"
+        f"MARKET MEDIAN: £{market_median:,.2f}"
     )
 
     print(
-        f"Average asking price: £{average_price:,.2f}"
+        f"Average: £{market_average:,.2f}"
     )
 
     print(
-        f"75th percentile: £{q3_clean:,.2f}"
+        f"Q3 / 75th percentile: £{market_q3:,.2f}"
     )
 
     print(
-        f"Highest clean asking price: £{highest_price:,.2f}"
+        f"Highest normal asking price: £{market_high:,.2f}"
     )
 
 else:
 
-    print()
+    market_median = None
+
     print(
-        "No valid clean listings found."
+        "No usable listings."
     )
 
 
 # ============================================================
-# 13. OUTLIER REPORT
+# 11. DEAL WATCH
 # ============================================================
 
 print()
 print("=" * 70)
-print("OUTLIER REPORT")
+print("DEAL WATCH")
 print("=" * 70)
 
 
-if (
-    q1 is not None
-    and q3 is not None
-):
+if market_median:
 
-    print(
-        f"Q1: £{q1:,.2f}"
+    watch_price = (
+        market_median
+        * (
+            1
+            - DEAL_WATCH_PERCENT / 100
+        )
+    )
+
+    good_price = (
+        market_median
+        * (
+            1
+            - GOOD_DEAL_PERCENT / 100
+        )
+    )
+
+    strong_price = (
+        market_median
+        * (
+            1
+            - STRONG_DEAL_PERCENT / 100
+        )
     )
 
     print(
-        f"Q3: £{q3:,.2f}"
+        f"Market median: £{market_median:,.2f}"
     )
 
     print(
-        f"IQR: £{iqr:,.2f}"
+        f"10% below median: £{watch_price:,.2f}"
     )
 
     print(
-        f"Lower bound: £{lower_bound:,.2f}"
+        f"15% below median: £{good_price:,.2f}"
     )
 
     print(
-        f"Upper bound: £{upper_bound:,.2f}"
+        f"20% below median: £{strong_price:,.2f}"
     )
 
-    print(
-        f"Removed listings: {len(outlier_items)}"
-    )
+    print()
 
 
-    if outlier_items:
+    # Include all exact matches here,
+    # including unusually low prices.
+    deal_candidates = []
 
-        print()
-        print(
-            "Excluded price outliers:"
+    for item in matched_items:
+
+        price = get_price(
+            item
         )
 
-        for item in sorted(
-            outlier_items,
-            key=lambda x: float(
-                x["price"]["value"]
+        discount = (
+            (
+                market_median
+                - price
             )
+            / market_median
+        ) * 100
+
+        if discount >= DEAL_WATCH_PERCENT:
+
+            deal_candidates.append(
+                (
+                    price,
+                    discount,
+                    item
+                )
+            )
+
+
+    deal_candidates.sort(
+        key=lambda x: x[0]
+    )
+
+
+    if not deal_candidates:
+
+        print(
+            "No listings currently 10%+ below market median."
+        )
+
+
+    for price, discount, item in deal_candidates:
+
+        if discount >= STRONG_DEAL_PERCENT:
+
+            deal_level = "STRONG DEAL"
+
+        elif discount >= GOOD_DEAL_PERCENT:
+
+            deal_level = "GOOD DEAL"
+
+        else:
+
+            deal_level = "WATCH"
+
+
+        title = item.get(
+            "title",
+            "No title"
+        )
+
+        item_url = item.get(
+            "itemWebUrl",
+            ""
+        )
+
+        item_id = item.get(
+            "itemId",
+            ""
+        )
+
+
+        print(
+            "-" * 70
+        )
+
+        print(
+            deal_level
+        )
+
+        print(
+            f"Price: £{price:,.2f}"
+        )
+
+        print(
+            f"Discount vs median: {discount:.1f}%"
+        )
+
+        print(
+            f"Title: {title}"
+        )
+
+        print(
+            f"Item ID: {item_id}"
+        )
+
+        print(
+            f"URL: {item_url}"
+        )
+
+
+        # Important:
+        # an extreme low price can be a deal,
+        # but can also indicate a bad listing.
+        if (
+            lower_bound is not None
+            and price < lower_bound
         ):
 
-            title = item.get(
-                "title",
-                "No title"
-            )
-
-            price = float(
-                item["price"]["value"]
+            print(
+                "WARNING: Price is below the statistical lower bound."
             )
 
             print(
-                f"£{price:,.2f} | {title}"
+                "Verify listing details carefully before buying."
             )
-
-else:
-
-    print(
-        "Not enough listings to calculate IQR."
-    )
 
 
 # ============================================================
-# 14. FILTER REPORT
+# 12. HIGH OUTLIER REPORT
 # ============================================================
 
 print()
 print("=" * 70)
-print("MATCHING FILTER REPORT")
+print("HIGH PRICE OUTLIERS")
+print("=" * 70)
+
+
+if high_outlier_items:
+
+    for item in sorted(
+        high_outlier_items,
+        key=get_price
+    ):
+
+        print(
+            f"£{get_price(item):,.2f} | "
+            f"{item.get('title', 'No title')}"
+        )
+
+else:
+
+    print(
+        "No high-price outliers."
+    )
+
+
+# ============================================================
+# 13. MATCH FILTER REPORT
+# ============================================================
+
+print()
+print("=" * 70)
+print("FILTER REPORT")
 print("=" * 70)
 
 
@@ -780,9 +881,13 @@ if rejection_reasons:
 else:
 
     print(
-        "No listings rejected by identity filters."
+        "No identity-filter rejections."
     )
 
+
+# ============================================================
+# FINISH
+# ============================================================
 
 print()
 print("=" * 70)
@@ -790,15 +895,11 @@ print("IMPORTANT")
 print("=" * 70)
 
 print(
-    "These are live eBay asking prices, not sold prices."
+    "Prices shown are live eBay asking prices, not sold prices."
 )
 
 print(
-    "History saving is disabled."
-)
-
-print(
-    "No eBay marketplace data is persisted by this script."
+    "No price-history data is saved by this script."
 )
 
 print()
