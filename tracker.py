@@ -4,6 +4,8 @@ import urllib.parse
 import urllib.request
 import urllib.error
 import json
+import csv
+from datetime import datetime, timezone
 
 
 print("Pokemon PSA 10 Price Tracker - eBay UK Production")
@@ -70,7 +72,6 @@ except urllib.error.HTTPError as error:
     print("ERROR getting Production access token")
     print("HTTP status:", error.code)
     print(error.read().decode())
-
     raise
 
 
@@ -78,7 +79,6 @@ except Exception as error:
 
     print("ERROR connecting to eBay Production:")
     print(error)
-
     raise
 
 
@@ -137,11 +137,65 @@ try:
     print()
 
 
-    if not items:
-        print("No matching listings found.")
+except urllib.error.HTTPError as error:
 
+    print("ERROR searching eBay Production Browse API")
+    print("HTTP status:", error.code)
+    print(error.read().decode())
+    raise
+
+
+except Exception as error:
+
+    print("ERROR searching eBay Production:")
+    print(error)
+    raise
+
+
+# ============================================================
+# 5. PREPARE PRICE HISTORY CSV
+# ============================================================
+
+csv_file = "prices.csv"
+
+file_exists = os.path.isfile(csv_file)
+
+today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+with open(
+    csv_file,
+    "a",
+    newline="",
+    encoding="utf-8"
+) as file:
+
+    writer = csv.writer(file)
+
+    # Create column names only when the CSV is first created
+    if not file_exists:
+
+        writer.writerow([
+            "date",
+            "item_id",
+            "title",
+            "price",
+            "currency",
+            "condition",
+            "url"
+        ])
+
+
+    # ========================================================
+    # 6. SAVE EACH LISTING
+    # ========================================================
 
     for number, item in enumerate(items, start=1):
+
+        item_id = item.get(
+            "itemId",
+            ""
+        )
 
         title = item.get(
             "title",
@@ -155,7 +209,7 @@ try:
 
         price = price_data.get(
             "value",
-            "N/A"
+            ""
         )
 
         currency = price_data.get(
@@ -164,35 +218,4 @@ try:
         )
 
         condition = item.get(
-            "condition",
-            "N/A"
-        )
-
-        item_url = item.get(
-            "itemWebUrl",
-            "No URL"
-        )
-
-
-        print(f"{number}. {title}")
-        print(f"   Price: {price} {currency}")
-        print(f"   Condition: {condition}")
-        print(f"   URL: {item_url}")
-        print()
-
-
-except urllib.error.HTTPError as error:
-
-    print("ERROR searching eBay Production Browse API")
-    print("HTTP status:", error.code)
-    print(error.read().decode())
-
-    raise
-
-
-except Exception as error:
-
-    print("ERROR searching eBay Production:")
-    print(error)
-
-    raise
+            "
