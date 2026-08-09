@@ -14,6 +14,7 @@ from collections import Counter
 # ============================================================
 
 CARD_ID = "pikachu-grey-felt-hat-085-van-gogh-psa10"
+
 CARD_NAME = "Pikachu with Grey Felt Hat #085 PSA 10"
 
 SEARCH_TERMS = [
@@ -23,22 +24,22 @@ SEARCH_TERMS = [
 
 
 # ============================================================
-# SOLD MARKET BENCHMARK
+# 30-DAY ACTUAL SOLD BENCHMARK
 # ============================================================
 #
-# Source:
-# eBay Product Research
-# UK
+# Manually derived from eBay Product Research:
+# UK marketplace
 # 10 Jul 2026 - 9 Aug 2026
+# Explicit PSA 10 Van Gogh Pikachu #085 sales only
+# Delivered price = sold price + postage
 #
-# Clean PSA 10 sold listings
-# Item price + postage
-#
-# This is a MANUAL benchmark.
-# It does NOT automatically update.
+# This benchmark does NOT automatically update yet.
 # ============================================================
 
 SOLD_DELIVERED_MEDIAN_GBP = 1918.63
+
+
+# Deal thresholds versus ACTUAL SOLD median
 
 WATCH_PERCENT = 10
 GOOD_DEAL_PERCENT = 15
@@ -46,7 +47,7 @@ STRONG_DEAL_PERCENT = 20
 
 
 print("=" * 72)
-print("POKEMON DEAL FINDER")
+print("POKEMON PSA 10 TRUE DEAL FINDER")
 print(f"Target: {CARD_NAME}")
 print(f"Card ID: {CARD_ID}")
 print("=" * 72)
@@ -68,9 +69,8 @@ buyer_postcode = os.environ.get(
 if not buyer_postcode:
 
     print()
-    print("WARNING:")
-    print("BUYER_POSTCODE is missing.")
-    print("Calculated shipping may be unavailable or inaccurate.")
+    print("WARNING: BUYER_POSTCODE is missing.")
+    print("Shipping estimates may be incomplete.")
     print()
 
 
@@ -130,35 +130,22 @@ try:
         "access_token"
     ]
 
-    print(
-        "SUCCESS: Connected to eBay Production"
-    )
+    print()
+    print("SUCCESS: Connected to eBay Production")
 
 
 except urllib.error.HTTPError as error:
 
-    print(
-        "ERROR getting eBay access token"
-    )
-
-    print(
-        "HTTP status:",
-        error.code
-    )
-
-    print(
-        error.read().decode()
-    )
+    print("ERROR getting eBay access token")
+    print("HTTP status:", error.code)
+    print(error.read().decode())
 
     raise
 
 
 except Exception as error:
 
-    print(
-        "ERROR connecting to eBay:"
-    )
-
+    print("ERROR connecting to eBay Production:")
     print(error)
 
     raise
@@ -172,20 +159,9 @@ def normalize(text):
 
     text = str(text).lower()
 
-    text = text.replace(
-        "–",
-        "-"
-    )
-
-    text = text.replace(
-        "—",
-        "-"
-    )
-
-    text = text.replace(
-        "’",
-        "'"
-    )
+    text = text.replace("–", "-")
+    text = text.replace("—", "-")
+    text = text.replace("’", "'")
 
     text = re.sub(
         r"\s+",
@@ -197,7 +173,7 @@ def normalize(text):
 
 
 # ============================================================
-# 4. MATCH ONLY THE EXACT CARD
+# 4. STRICT TARGET CARD MATCHING
 # ============================================================
 
 def is_target_card(item):
@@ -217,17 +193,20 @@ def is_target_card(item):
     )
 
 
-    # Pikachu required
+    # --------------------------------------------------------
+    # Must contain Pikachu
+    # --------------------------------------------------------
+
     if "pikachu" not in title:
 
-        return (
-            False,
-            "not_pikachu"
-        )
+        return False, "not_pikachu"
 
 
-    # Card number 085 / SVP085 required
-    number_patterns = [
+    # --------------------------------------------------------
+    # Must contain card number 085 / SVP085
+    # --------------------------------------------------------
+
+    card_number_patterns = [
         r"\b085\b",
         r"\b85\b",
         r"\bsvp[\s\-]*085\b",
@@ -240,29 +219,28 @@ def is_target_card(item):
             pattern,
             title
         )
-        for pattern
-        in number_patterns
+        for pattern in card_number_patterns
     ):
 
-        return (
-            False,
-            "wrong_card_number"
-        )
+        return False, "wrong_card_number"
 
 
-    # PSA 10 required
+    # --------------------------------------------------------
+    # Must explicitly say PSA 10
+    # --------------------------------------------------------
+
     if not re.search(
         r"\bpsa[\s\-]*10\b",
         title
     ):
 
-        return (
-            False,
-            "not_psa10"
-        )
+        return False, "not_psa10"
 
 
-    # Card identity required
+    # --------------------------------------------------------
+    # Must identify Van Gogh / Grey Felt Hat
+    # --------------------------------------------------------
+
     identity_terms = [
         "grey felt hat",
         "gray felt hat",
@@ -272,17 +250,16 @@ def is_target_card(item):
 
     if not any(
         term in title
-        for term
-        in identity_terms
+        for term in identity_terms
     ):
 
-        return (
-            False,
-            "wrong_card_identity"
-        )
+        return False, "wrong_card_identity"
 
 
-    # Exclude competing graders
+    # --------------------------------------------------------
+    # Exclude competing grading companies
+    # --------------------------------------------------------
+
     other_graders = [
         "ace 10",
         "ace grading",
@@ -295,17 +272,16 @@ def is_target_card(item):
 
     if any(
         grader in title
-        for grader
-        in other_graders
+        for grader in other_graders
     ):
 
-        return (
-            False,
-            "other_grader"
-        )
+        return False, "other_grader"
 
 
-    # Exclude unusual premium versions
+    # --------------------------------------------------------
+    # Exclude autographs / unusual premium versions
+    # --------------------------------------------------------
+
     special_versions = [
         "signed",
         "signature",
@@ -318,17 +294,16 @@ def is_target_card(item):
 
     if any(
         term in title
-        for term
-        in special_versions
+        for term in special_versions
     ):
 
-        return (
-            False,
-            "special_version"
-        )
+        return False, "special_version"
 
 
-    # Exclude wrong products
+    # --------------------------------------------------------
+    # Exclude obvious wrong products
+    # --------------------------------------------------------
+
     excluded_terms = [
         "mystery",
         "proxy",
@@ -351,17 +326,16 @@ def is_target_card(item):
 
     if any(
         term in title
-        for term
-        in excluded_terms
+        for term in excluded_terms
     ):
 
-        return (
-            False,
-            "excluded_product"
-        )
+        return False, "excluded_product"
 
 
-    # Exclude bundles / lots
+    # --------------------------------------------------------
+    # Exclude multi-card listings
+    # --------------------------------------------------------
+
     multi_item_terms = [
         "bundle",
         "lot of",
@@ -375,30 +349,28 @@ def is_target_card(item):
 
     if any(
         term in title
-        for term
-        in multi_item_terms
+        for term in multi_item_terms
     ):
 
-        return (
-            False,
-            "multi_card_listing"
-        )
+        return False, "multi_card_listing"
 
 
-    # Must be graded
+    # --------------------------------------------------------
+    # Must normally be eBay graded condition
+    # --------------------------------------------------------
+
     if (
         condition
-        and "graded"
-        not in condition
+        and "graded" not in condition
     ):
 
-        return (
-            False,
-            "not_graded_condition"
-        )
+        return False, "not_graded_condition"
 
 
-    # We want immediately buyable listings
+    # --------------------------------------------------------
+    # Only immediately purchasable listings
+    # --------------------------------------------------------
+
     buying_options = item.get(
         "buyingOptions",
         []
@@ -407,17 +379,16 @@ def is_target_card(item):
 
     if (
         buying_options
-        and "FIXED_PRICE"
-        not in buying_options
+        and "FIXED_PRICE" not in buying_options
     ):
 
-        return (
-            False,
-            "not_fixed_price"
-        )
+        return False, "not_fixed_price"
 
 
-    # GBP item price required
+    # --------------------------------------------------------
+    # Must have GBP price
+    # --------------------------------------------------------
+
     price_data = item.get(
         "price",
         {}
@@ -437,18 +408,12 @@ def is_target_card(item):
 
     if price_value is None:
 
-        return (
-            False,
-            "no_price"
-        )
+        return False, "no_price"
 
 
     if currency != "GBP":
 
-        return (
-            False,
-            "not_gbp"
-        )
+        return False, "not_gbp"
 
 
     try:
@@ -462,28 +427,19 @@ def is_target_card(item):
         TypeError
     ):
 
-        return (
-            False,
-            "invalid_price"
-        )
+        return False, "invalid_price"
 
 
     if price <= 0:
 
-        return (
-            False,
-            "invalid_price"
-        )
+        return False, "invalid_price"
 
 
-    return (
-        True,
-        "accepted"
-    )
+    return True, "accepted"
 
 
 # ============================================================
-# 5. ITEM PRICE
+# 5. GET ITEM PRICE
 # ============================================================
 
 def get_item_price(item):
@@ -498,7 +454,7 @@ def get_item_price(item):
 
 
 # ============================================================
-# 6. SHIPPING COST
+# 6. GET SHIPPING COST
 # ============================================================
 
 def get_shipping_cost(item):
@@ -509,7 +465,7 @@ def get_shipping_cost(item):
     )
 
 
-    possible_costs = []
+    valid_shipping_costs = []
 
 
     for option in shipping_options:
@@ -531,10 +487,12 @@ def get_shipping_cost(item):
         )
 
 
-        if (
-            value is None
-            or currency != "GBP"
-        ):
+        if value is None:
+
+            continue
+
+
+        if currency != "GBP":
 
             continue
 
@@ -555,18 +513,20 @@ def get_shipping_cost(item):
 
         if cost >= 0:
 
-            possible_costs.append(
+            valid_shipping_costs.append(
                 cost
             )
 
 
-    if not possible_costs:
+    if not valid_shipping_costs:
 
         return None
 
 
+    # Use cheapest available shipping option
+
     return min(
-        possible_costs
+        valid_shipping_costs
     )
 
 
@@ -581,24 +541,60 @@ def get_delivered_price(item):
     )
 
 
-    shipping = get_shipping_cost(
+    shipping_cost = get_shipping_cost(
         item
     )
 
 
-    if shipping is None:
+    if shipping_cost is None:
 
         return None
 
 
     return (
         item_price
-        + shipping
+        + shipping_cost
     )
 
 
 # ============================================================
-# 8. SEARCH EBAY UK
+# 8. BUILD EBAY END USER CONTEXT HEADER
+# ============================================================
+
+def build_end_user_context():
+
+    if not buyer_postcode:
+
+        return None
+
+
+    location = (
+        "country=GB,"
+        f"zip={buyer_postcode}"
+    )
+
+
+    encoded_location = (
+        urllib.parse.quote(
+            location,
+            safe=""
+        )
+    )
+
+
+    return (
+        "contextualLocation="
+        f"{encoded_location}"
+    )
+
+
+end_user_context = (
+    build_end_user_context()
+)
+
+
+# ============================================================
+# 9. SEARCH EBAY UK
 # ============================================================
 
 all_items = {}
@@ -607,7 +603,6 @@ all_items = {}
 for search_term in SEARCH_TERMS:
 
     print()
-
     print(
         f"Searching: {search_term}"
     )
@@ -620,26 +615,19 @@ for search_term in SEARCH_TERMS:
     }
 
 
-    query_string = (
-        urllib.parse.urlencode(
+    search_url = (
+        "https://api.ebay.com/"
+        "buy/browse/v1/"
+        "item_summary/search?"
+        + urllib.parse.urlencode(
             params
         )
     )
 
 
-    search_url = (
-        "https://api.ebay.com/"
-        "buy/browse/v1/"
-        "item_summary/search?"
-        f"{query_string}"
-    )
-
-
-    search_request = (
-        urllib.request.Request(
-            search_url,
-            method="GET"
-        )
+    search_request = urllib.request.Request(
+        search_url,
+        method="GET",
     )
 
 
@@ -655,26 +643,11 @@ for search_term in SEARCH_TERMS:
     )
 
 
-    # Improve shipping accuracy
-    if buyer_postcode:
-
-        contextual_location = (
-            urllib.parse.quote(
-                (
-                    "country=GB,"
-                    f"zip={buyer_postcode}"
-                ),
-                safe=""
-            )
-        )
-
+    if end_user_context:
 
         search_request.add_header(
             "X-EBAY-C-ENDUSERCTX",
-            (
-                "contextualLocation="
-                f"{contextual_location}"
-            )
+            end_user_context
         )
 
 
@@ -684,12 +657,12 @@ for search_term in SEARCH_TERMS:
             search_request
         ) as response:
 
-            result = json.loads(
+            search_result = json.loads(
                 response.read().decode()
             )
 
 
-        search_items = result.get(
+        search_items = search_result.get(
             "itemSummaries",
             []
         )
@@ -699,6 +672,8 @@ for search_term in SEARCH_TERMS:
             f"Raw results: {len(search_items)}"
         )
 
+
+        # Deduplicate between search phrases
 
         for item in search_items:
 
@@ -716,42 +691,31 @@ for search_term in SEARCH_TERMS:
 
     except urllib.error.HTTPError as error:
 
-        print(
-            "ERROR searching eBay"
-        )
-
-        print(
-            "HTTP status:",
-            error.code
-        )
-
-        print(
-            error.read().decode()
-        )
+        print()
+        print("ERROR searching eBay Browse API")
+        print("HTTP status:", error.code)
+        print(error.read().decode())
 
         raise
 
 
     except Exception as error:
 
-        print(
-            "ERROR searching eBay:"
-        )
-
+        print()
+        print("ERROR searching eBay:")
         print(error)
 
         raise
 
 
 print()
-
 print(
     f"Unique raw listings: {len(all_items)}"
 )
 
 
 # ============================================================
-# 9. EXACT CARD FILTER
+# 10. EXACT CARD FILTER
 # ============================================================
 
 matched_items = []
@@ -774,6 +738,7 @@ for item in all_items.values():
             item
         )
 
+
     else:
 
         rejection_reasons[
@@ -787,7 +752,7 @@ print(
 
 
 # ============================================================
-# 10. SHIPPING COVERAGE
+# 11. SHIPPING COVERAGE
 # ============================================================
 
 known_shipping_items = []
@@ -797,16 +762,19 @@ unknown_shipping_items = []
 
 for item in matched_items:
 
-    shipping = get_shipping_cost(
-        item
+    shipping_cost = (
+        get_shipping_cost(
+            item
+        )
     )
 
 
-    if shipping is None:
+    if shipping_cost is None:
 
         unknown_shipping_items.append(
             item
         )
+
 
     else:
 
@@ -816,27 +784,38 @@ for item in matched_items:
 
 
 print(
-    f"Listings with shipping cost: "
+    "Listings with shipping estimate: "
     f"{len(known_shipping_items)}"
 )
 
+
 print(
-    f"Listings with unknown shipping: "
+    "Listings with shipping unavailable: "
     f"{len(unknown_shipping_items)}"
 )
 
 
 # ============================================================
-# 11. LIVE MARKET SNAPSHOT
+# 12. CURRENT LIVE MARKET SNAPSHOT
 # ============================================================
 
-delivered_prices = [
-    get_delivered_price(
-        item
+delivered_prices = []
+
+
+for item in known_shipping_items:
+
+    delivered_price = (
+        get_delivered_price(
+            item
+        )
     )
-    for item
-    in known_shipping_items
-]
+
+
+    if delivered_price is not None:
+
+        delivered_prices.append(
+            delivered_price
+        )
 
 
 print()
@@ -852,9 +831,30 @@ if delivered_prices:
     )
 
 
+    live_average = statistics.mean(
+        delivered_prices
+    )
+
+
+    live_low = min(
+        delivered_prices
+    )
+
+
+    live_high = max(
+        delivered_prices
+    )
+
+
     print(
         f"Listings analysed: "
         f"{len(delivered_prices)}"
+    )
+
+
+    print(
+        "Lowest delivered asking price: "
+        f"£{live_low:,.2f}"
     )
 
 
@@ -865,8 +865,14 @@ if delivered_prices:
 
 
     print(
-        "Lowest live delivered price: "
-        f"£{min(delivered_prices):,.2f}"
+        "Live delivered average: "
+        f"£{live_average:,.2f}"
+    )
+
+
+    print(
+        "Highest delivered asking price: "
+        f"£{live_high:,.2f}"
     )
 
 
@@ -875,22 +881,22 @@ else:
     live_median = None
 
     print(
-        "No listings have usable shipping data."
+        "No usable delivered-price listings found."
     )
 
 
 # ============================================================
-# 12. SOLD MARKET BENCHMARK
+# 13. ACTUAL SOLD MARKET BENCHMARK
 # ============================================================
 
 print()
 print("=" * 72)
-print("30-DAY SOLD MARKET BENCHMARK")
+print("30-DAY ACTUAL SOLD MARKET")
 print("=" * 72)
 
 
 print(
-    "Clean PSA 10 sold delivered median:"
+    "Clean PSA 10 delivered median:"
 )
 
 print(
@@ -898,7 +904,7 @@ print(
 )
 
 
-watch_price = (
+watch_threshold = (
     SOLD_DELIVERED_MEDIAN_GBP
     * (
         1
@@ -907,7 +913,7 @@ watch_price = (
 )
 
 
-good_price = (
+good_threshold = (
     SOLD_DELIVERED_MEDIAN_GBP
     * (
         1
@@ -916,7 +922,7 @@ good_price = (
 )
 
 
-strong_price = (
+strong_threshold = (
     SOLD_DELIVERED_MEDIAN_GBP
     * (
         1
@@ -928,23 +934,25 @@ strong_price = (
 print()
 
 print(
-    f"10% below sold median: "
-    f"£{watch_price:,.2f}"
+    f"WATCH (-10%): "
+    f"£{watch_threshold:,.2f}"
 )
 
-print(
-    f"15% below sold median: "
-    f"£{good_price:,.2f}"
-)
 
 print(
-    f"20% below sold median: "
-    f"£{strong_price:,.2f}"
+    f"GOOD DEAL (-15%): "
+    f"£{good_threshold:,.2f}"
+)
+
+
+print(
+    f"STRONG DEAL (-20%): "
+    f"£{strong_threshold:,.2f}"
 )
 
 
 # ============================================================
-# 13. TRUE DEAL WATCH
+# 14. TRUE DEAL WATCH
 # ============================================================
 
 print()
@@ -965,7 +973,12 @@ for item in known_shipping_items:
     )
 
 
-    discount = (
+    if delivered_price is None:
+
+        continue
+
+
+    discount_percent = (
         (
             SOLD_DELIVERED_MEDIAN_GBP
             - delivered_price
@@ -974,33 +987,34 @@ for item in known_shipping_items:
     ) * 100
 
 
-    if discount >= WATCH_PERCENT:
+    if discount_percent >= WATCH_PERCENT:
 
         deal_candidates.append(
             (
                 delivered_price,
-                discount,
+                discount_percent,
                 item
             )
         )
 
 
 deal_candidates.sort(
-    key=lambda x: x[0]
+    key=lambda result: result[0]
 )
 
 
 if not deal_candidates:
 
+    print()
     print(
-        "No current listing is at least "
-        "10% below the 30-day sold median."
+        "No current listings are at least "
+        "10% below the 30-day actual sold median."
     )
 
 
 for (
     delivered_price,
-    discount,
+    discount_percent,
     item
 ) in deal_candidates:
 
@@ -1011,7 +1025,7 @@ for (
     )
 
 
-    shipping = (
+    shipping_cost = (
         get_shipping_cost(
             item
         )
@@ -1019,7 +1033,7 @@ for (
 
 
     if (
-        discount
+        discount_percent
         >= STRONG_DEAL_PERCENT
     ):
 
@@ -1029,7 +1043,7 @@ for (
 
 
     elif (
-        discount
+        discount_percent
         >= GOOD_DEAL_PERCENT
     ):
 
@@ -1051,14 +1065,14 @@ for (
     )
 
 
-    item_url = item.get(
-        "itemWebUrl",
+    item_id = item.get(
+        "itemId",
         ""
     )
 
 
-    item_id = item.get(
-        "itemId",
+    item_url = item.get(
+        "itemWebUrl",
         ""
     )
 
@@ -1079,7 +1093,7 @@ for (
 
     print(
         f"Shipping: "
-        f"£{shipping:,.2f}"
+        f"£{shipping_cost:,.2f}"
     )
 
 
@@ -1097,7 +1111,7 @@ for (
 
     print(
         "Discount vs actual sold market: "
-        f"{discount:.1f}%"
+        f"{discount_percent:.1f}%"
     )
 
 
@@ -1117,7 +1131,97 @@ for (
 
 
 # ============================================================
-# 14. SHIPPING UNKNOWN
+# 15. CHEAPEST CURRENT LISTINGS
+# ============================================================
+
+print()
+print("=" * 72)
+print("CHEAPEST CURRENT LISTINGS")
+print("=" * 72)
+
+
+sorted_current_items = sorted(
+    known_shipping_items,
+    key=lambda item: (
+        get_delivered_price(item)
+        if get_delivered_price(item)
+        is not None
+        else float("inf")
+    )
+)
+
+
+for number, item in enumerate(
+    sorted_current_items[:5],
+    start=1
+):
+
+    item_price = (
+        get_item_price(
+            item
+        )
+    )
+
+
+    shipping_cost = (
+        get_shipping_cost(
+            item
+        )
+    )
+
+
+    delivered_price = (
+        get_delivered_price(
+            item
+        )
+    )
+
+
+    difference_percent = (
+        (
+            delivered_price
+            - SOLD_DELIVERED_MEDIAN_GBP
+        )
+        / SOLD_DELIVERED_MEDIAN_GBP
+    ) * 100
+
+
+    print()
+    print(
+        f"{number}. "
+        f"{item.get('title', 'No title')}"
+    )
+
+
+    print(
+        f"   Item: £{item_price:,.2f}"
+    )
+
+
+    print(
+        f"   Shipping: £{shipping_cost:,.2f}"
+    )
+
+
+    print(
+        f"   Delivered: £{delivered_price:,.2f}"
+    )
+
+
+    print(
+        "   Vs sold median: "
+        f"{difference_percent:+.1f}%"
+    )
+
+
+    print(
+        f"   URL: "
+        f"{item.get('itemWebUrl', '')}"
+    )
+
+
+# ============================================================
+# 16. SHIPPING UNKNOWN
 # ============================================================
 
 if unknown_shipping_items:
@@ -1140,14 +1244,18 @@ if unknown_shipping_items:
             f"£{get_item_price(item):,.2f}"
         )
 
+
         print(
             f"Title: "
             f"{item.get('title', 'No title')}"
         )
 
+
         print(
-            "Reason: shipping cost unavailable"
+            "Reason: eBay did not return a usable "
+            "GBP shipping estimate."
         )
+
 
         print(
             f"URL: "
@@ -1156,7 +1264,7 @@ if unknown_shipping_items:
 
 
 # ============================================================
-# 15. FILTER REPORT
+# 17. FILTER REPORT
 # ============================================================
 
 print()
@@ -1175,15 +1283,16 @@ if rejection_reasons:
             f"{reason}: {count}"
         )
 
+
 else:
 
     print(
-        "No identity-filter rejections."
+        "No listings rejected."
     )
 
 
 # ============================================================
-# FINISH
+# 18. IMPORTANT NOTES
 # ============================================================
 
 print()
@@ -1191,22 +1300,34 @@ print("=" * 72)
 print("IMPORTANT")
 print("=" * 72)
 
-print(
-    "Live prices include available shipping estimates."
-)
 
 print(
-    "Deal ratings are compared with the manually "
-    "calculated 30-day sold delivered median."
+    "1. Live prices are current eBay asking prices."
 )
 
-print(
-    "The sold benchmark is not automatically refreshed yet."
-)
 
 print(
-    "No eBay marketplace history is saved."
+    "2. Delivered price = item price + available "
+    "eBay shipping estimate."
 )
+
+
+print(
+    "3. Deal ratings compare against the manually "
+    "calculated 30-day actual sold delivered median."
+)
+
+
+print(
+    "4. The £1,918.63 sold benchmark does not "
+    "automatically refresh yet."
+)
+
+
+print(
+    "5. No eBay marketplace price history is saved."
+)
+
 
 print()
 print(
