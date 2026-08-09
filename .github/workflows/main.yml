@@ -18,6 +18,6 @@ jobs:
 
       - name: Run tracker
         env:
-          EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
-          EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
+          EBAY_CLIENT_ID: ${{ secrets.EBAY_PROD_CLIENT_ID }}
+          EBAY_CLIENT_SECRET: ${{ secrets.EBAY_PROD_CLIENT_SECRET }}
         run: python tracker.py
