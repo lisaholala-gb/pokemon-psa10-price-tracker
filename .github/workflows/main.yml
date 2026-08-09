@@ -7,7 +7,7 @@ on:
     - cron: "0 8 * * *"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   run-tracker:
@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Get repository files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -26,18 +26,5 @@ jobs:
         env:
           EBAY_CLIENT_ID: ${{ secrets.EBAY_PROD_CLIENT_ID }}
           EBAY_CLIENT_SECRET: ${{ secrets.EBAY_PROD_CLIENT_SECRET }}
+          BUYER_POSTCODE: ${{ secrets.BUYER_POSTCODE }}
         run: python tracker.py
-
-      - name: Save price history to GitHub
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add price_history.csv
-
-          if git diff --cached --quiet; then
-            echo "No price history changes to commit."
-          else
-            git commit -m "Update Pokemon price history"
-            git push
-          fi
