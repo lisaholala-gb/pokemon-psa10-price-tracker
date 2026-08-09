@@ -2,6 +2,12 @@ name: Run Pokemon Price Tracker
 
 on:
   workflow_dispatch:
+    inputs:
+      send_test_email:
+        description: "Send a test email even if no deal is found"
+        required: false
+        default: false
+        type: boolean
 
   schedule:
     - cron: "0 8 * * *"
@@ -18,7 +24,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -27,4 +33,10 @@ jobs:
           EBAY_CLIENT_ID: ${{ secrets.EBAY_PROD_CLIENT_ID }}
           EBAY_CLIENT_SECRET: ${{ secrets.EBAY_PROD_CLIENT_SECRET }}
           BUYER_POSTCODE: ${{ secrets.BUYER_POSTCODE }}
+
+          EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+
+          FORCE_EMAIL_TEST: ${{ inputs.send_test_email }}
+
         run: python tracker.py
