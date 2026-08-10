@@ -31,17 +31,8 @@ SEARCH_TERMS = [
 # ============================================================
 # MANUAL 30-DAY SOLD BENCHMARK
 # ============================================================
-#
-# eBay Product Research
-# UK
-# Clean PSA 10 sold delivered-price benchmark
-#
-# IMPORTANT:
-# This value does NOT update automatically yet.
-# ============================================================
 
 SOLD_DELIVERED_MEDIAN_GBP = 1918.63
-
 
 WATCH_PERCENT = 10
 GOOD_DEAL_PERCENT = 15
@@ -53,7 +44,6 @@ STRONG_DEAL_PERCENT = 20
 # ============================================================
 
 client_id = os.environ["EBAY_CLIENT_ID"]
-
 client_secret = os.environ["EBAY_CLIENT_SECRET"]
 
 buyer_postcode = os.environ.get(
@@ -61,12 +51,10 @@ buyer_postcode = os.environ.get(
     ""
 ).strip()
 
-
 email_address = os.environ.get(
     "EMAIL_ADDRESS",
     ""
 ).strip()
-
 
 email_app_password = os.environ.get(
     "EMAIL_APP_PASSWORD",
@@ -74,17 +62,8 @@ email_app_password = os.environ.get(
 ).replace(" ", "").strip()
 
 
-force_email_test = (
-    os.environ.get(
-        "FORCE_EMAIL_TEST",
-        ""
-    ).lower()
-    == "true"
-)
-
-
 print("=" * 72)
-print("POKEMON DEAL FINDER")
+print("POKEMON DAILY MARKET TRACKER")
 print(f"Target: {CARD_NAME}")
 print("=" * 72)
 
@@ -93,28 +72,21 @@ print("=" * 72)
 # GET EBAY ACCESS TOKEN
 # ============================================================
 
-credentials = (
-    f"{client_id}:{client_secret}"
-)
+credentials = f"{client_id}:{client_secret}"
 
-encoded_credentials = (
-    base64.b64encode(
-        credentials.encode()
-    ).decode()
-)
-
+encoded_credentials = base64.b64encode(
+    credentials.encode()
+).decode()
 
 token_url = (
     "https://api.ebay.com/"
     "identity/v1/oauth2/token"
 )
 
-
 token_data = urllib.parse.urlencode({
     "grant_type": "client_credentials",
     "scope": "https://api.ebay.com/oauth/api_scope",
 }).encode()
-
 
 token_request = urllib.request.Request(
     token_url,
@@ -122,18 +94,15 @@ token_request = urllib.request.Request(
     method="POST",
 )
 
-
 token_request.add_header(
     "Authorization",
     f"Basic {encoded_credentials}"
 )
 
-
 token_request.add_header(
     "Content-Type",
     "application/x-www-form-urlencoded"
 )
-
 
 try:
 
@@ -145,32 +114,15 @@ try:
             response.read().decode()
         )
 
+    access_token = token_result["access_token"]
 
-    access_token = token_result[
-        "access_token"
-    ]
-
-
-    print(
-        "SUCCESS: Connected to eBay Production"
-    )
-
+    print("SUCCESS: Connected to eBay Production")
 
 except urllib.error.HTTPError as error:
 
-    print(
-        "ERROR getting eBay access token"
-    )
-
-    print(
-        "HTTP status:",
-        error.code
-    )
-
-    print(
-        error.read().decode()
-    )
-
+    print("ERROR getting eBay access token")
+    print("HTTP status:", error.code)
+    print(error.read().decode())
     raise
 
 
@@ -182,20 +134,9 @@ def normalize(text):
 
     text = str(text).lower()
 
-    text = text.replace(
-        "–",
-        "-"
-    )
-
-    text = text.replace(
-        "—",
-        "-"
-    )
-
-    text = text.replace(
-        "’",
-        "'"
-    )
+    text = text.replace("–", "-")
+    text = text.replace("—", "-")
+    text = text.replace("’", "'")
 
     text = re.sub(
         r"\s+",
@@ -213,25 +154,15 @@ def normalize(text):
 def is_target_card(item):
 
     title = normalize(
-        item.get(
-            "title",
-            ""
-        )
+        item.get("title", "")
     )
-
 
     condition = normalize(
-        item.get(
-            "condition",
-            ""
-        )
+        item.get("condition", "")
     )
 
-
     if "pikachu" not in title:
-
         return False, "not_pikachu"
-
 
     number_patterns = [
         r"\b085\b",
@@ -240,26 +171,17 @@ def is_target_card(item):
         r"\bsvp[\s\-]*85\b",
     ]
 
-
     if not any(
-        re.search(
-            pattern,
-            title
-        )
-        for pattern
-        in number_patterns
+        re.search(pattern, title)
+        for pattern in number_patterns
     ):
-
         return False, "wrong_card_number"
-
 
     if not re.search(
         r"\bpsa[\s\-]*10\b",
         title
     ):
-
         return False, "not_psa10"
-
 
     identity_terms = [
         "grey felt hat",
@@ -267,15 +189,11 @@ def is_target_card(item):
         "van gogh",
     ]
 
-
     if not any(
         term in title
-        for term
-        in identity_terms
+        for term in identity_terms
     ):
-
         return False, "wrong_card_identity"
-
 
     other_graders = [
         "ace 10",
@@ -286,15 +204,11 @@ def is_target_card(item):
         "sgc",
     ]
 
-
     if any(
         grader in title
-        for grader
-        in other_graders
+        for grader in other_graders
     ):
-
         return False, "other_grader"
-
 
     special_versions = [
         "signed",
@@ -305,15 +219,11 @@ def is_target_card(item):
         "misprint",
     ]
 
-
     if any(
         term in title
-        for term
-        in special_versions
+        for term in special_versions
     ):
-
         return False, "special_version"
-
 
     excluded_terms = [
         "mystery",
@@ -334,15 +244,11 @@ def is_target_card(item):
         "empty case",
     ]
 
-
     if any(
         term in title
-        for term
-        in excluded_terms
+        for term in excluded_terms
     ):
-
         return False, "excluded_product"
-
 
     multi_item_terms = [
         "bundle",
@@ -354,85 +260,57 @@ def is_target_card(item):
         "pair of",
     ]
 
-
     if any(
         term in title
-        for term
-        in multi_item_terms
+        for term in multi_item_terms
     ):
-
         return False, "multi_card_listing"
-
 
     if (
         condition
-        and "graded"
-        not in condition
+        and "graded" not in condition
     ):
-
         return False, "not_graded_condition"
-
 
     buying_options = item.get(
         "buyingOptions",
         []
     )
 
-
     if (
         buying_options
-        and "FIXED_PRICE"
-        not in buying_options
+        and "FIXED_PRICE" not in buying_options
     ):
-
         return False, "not_fixed_price"
-
 
     price_data = item.get(
         "price",
         {}
     )
 
-
     price_value = price_data.get(
         "value"
     )
-
 
     currency = price_data.get(
         "currency",
         ""
     )
 
-
     if price_value is None:
-
         return False, "no_price"
 
-
     if currency != "GBP":
-
         return False, "not_gbp"
 
-
     try:
+        price = float(price_value)
 
-        price = float(
-            price_value
-        )
-
-    except (
-        ValueError,
-        TypeError
-    ):
-
+    except (ValueError, TypeError):
         return False, "invalid_price"
-
 
     if price <= 0:
-
         return False, "invalid_price"
-
 
     return True, "accepted"
 
@@ -455,9 +333,7 @@ def get_shipping_cost(item):
         []
     )
 
-
     costs = []
-
 
     for option in shipping_options:
 
@@ -466,55 +342,34 @@ def get_shipping_cost(item):
             {}
         )
 
-
         value = shipping_cost.get(
             "value"
         )
-
 
         currency = shipping_cost.get(
             "currency",
             ""
         )
 
-
         if (
             value is None
             or currency != "GBP"
         ):
-
             continue
-
 
         try:
+            cost = float(value)
 
-            cost = float(
-                value
-            )
-
-        except (
-            ValueError,
-            TypeError
-        ):
-
+        except (ValueError, TypeError):
             continue
 
-
         if cost >= 0:
-
-            costs.append(
-                cost
-            )
-
+            costs.append(cost)
 
     if not costs:
-
         return None
 
-
-    return min(
-        costs
-    )
+    return min(costs)
 
 
 def get_delivered_price(item):
@@ -523,11 +378,8 @@ def get_delivered_price(item):
         item
     )
 
-
     if shipping is None:
-
         return None
-
 
     return (
         get_item_price(item)
@@ -541,15 +393,10 @@ def get_delivered_price(item):
 
 all_items = {}
 
-
 for search_term in SEARCH_TERMS:
 
     print()
-
-    print(
-        f"Searching: {search_term}"
-    )
-
+    print(f"Searching: {search_term}")
 
     params = {
         "q": search_term,
@@ -557,13 +404,9 @@ for search_term in SEARCH_TERMS:
         "filter": "deliveryCountry:GB",
     }
 
-
-    query_string = (
-        urllib.parse.urlencode(
-            params
-        )
+    query_string = urllib.parse.urlencode(
+        params
     )
-
 
     search_url = (
         "https://api.ebay.com/"
@@ -572,37 +415,30 @@ for search_term in SEARCH_TERMS:
         f"{query_string}"
     )
 
-
     request = urllib.request.Request(
         search_url,
         method="GET"
     )
-
 
     request.add_header(
         "Authorization",
         f"Bearer {access_token}"
     )
 
-
     request.add_header(
         "X-EBAY-C-MARKETPLACE-ID",
         "EBAY_GB"
     )
 
-
     if buyer_postcode:
 
-        contextual_location = (
-            urllib.parse.quote(
-                (
-                    "country=GB,"
-                    f"zip={buyer_postcode}"
-                ),
-                safe=""
-            )
+        contextual_location = urllib.parse.quote(
+            (
+                "country=GB,"
+                f"zip={buyer_postcode}"
+            ),
+            safe=""
         )
-
 
         request.add_header(
             "X-EBAY-C-ENDUSERCTX",
@@ -611,7 +447,6 @@ for search_term in SEARCH_TERMS:
                 f"{contextual_location}"
             )
         )
-
 
     try:
 
@@ -623,17 +458,14 @@ for search_term in SEARCH_TERMS:
                 response.read().decode()
             )
 
-
         search_items = result.get(
             "itemSummaries",
             []
         )
 
-
         print(
             f"Raw results: {len(search_items)}"
         )
-
 
         for item in search_items:
 
@@ -641,34 +473,18 @@ for search_term in SEARCH_TERMS:
                 "itemId"
             )
 
-
             if item_id:
-
-                all_items[
-                    item_id
-                ] = item
-
+                all_items[item_id] = item
 
     except urllib.error.HTTPError as error:
 
-        print(
-            "ERROR searching eBay"
-        )
-
-        print(
-            "HTTP status:",
-            error.code
-        )
-
-        print(
-            error.read().decode()
-        )
-
+        print("ERROR searching eBay")
+        print("HTTP status:", error.code)
+        print(error.read().decode())
         raise
 
 
 print()
-
 print(
     f"Unique raw listings: {len(all_items)}"
 )
@@ -679,30 +495,19 @@ print(
 # ============================================================
 
 matched_items = []
-
 rejection_reasons = Counter()
-
 
 for item in all_items.values():
 
-    matched, reason = (
-        is_target_card(
-            item
-        )
+    matched, reason = is_target_card(
+        item
     )
 
-
     if matched:
-
-        matched_items.append(
-            item
-        )
+        matched_items.append(item)
 
     else:
-
-        rejection_reasons[
-            reason
-        ] += 1
+        rejection_reasons[reason] += 1
 
 
 print(
@@ -715,9 +520,7 @@ print(
 # ============================================================
 
 known_shipping_items = []
-
 unknown_shipping_items = []
-
 
 for item in matched_items:
 
@@ -725,18 +528,11 @@ for item in matched_items:
         item
     )
 
-
     if shipping is None:
-
-        unknown_shipping_items.append(
-            item
-        )
+        unknown_shipping_items.append(item)
 
     else:
-
-        known_shipping_items.append(
-            item
-        )
+        known_shipping_items.append(item)
 
 
 # ============================================================
@@ -744,11 +540,8 @@ for item in matched_items:
 # ============================================================
 
 delivered_prices = [
-    get_delivered_price(
-        item
-    )
-    for item
-    in known_shipping_items
+    get_delivered_price(item)
+    for item in known_shipping_items
 ]
 
 
@@ -764,28 +557,29 @@ if delivered_prices:
         delivered_prices
     )
 
+    lowest_delivered = min(
+        delivered_prices
+    )
 
     print(
         f"Listings analysed: "
         f"{len(delivered_prices)}"
     )
 
-
     print(
         f"Live delivered median: "
         f"£{live_median:,.2f}"
     )
 
-
     print(
         f"Lowest delivered price: "
-        f"£{min(delivered_prices):,.2f}"
+        f"£{lowest_delivered:,.2f}"
     )
-
 
 else:
 
     live_median = None
+    lowest_delivered = None
 
     print(
         "No usable shipping data."
@@ -798,28 +592,17 @@ else:
 
 watch_price = (
     SOLD_DELIVERED_MEDIAN_GBP
-    * (
-        1
-        - WATCH_PERCENT / 100
-    )
+    * 0.90
 )
-
 
 good_price = (
     SOLD_DELIVERED_MEDIAN_GBP
-    * (
-        1
-        - GOOD_DEAL_PERCENT / 100
-    )
+    * 0.85
 )
-
 
 strong_price = (
     SOLD_DELIVERED_MEDIAN_GBP
-    * (
-        1
-        - STRONG_DEAL_PERCENT / 100
-    )
+    * 0.80
 )
 
 
@@ -850,20 +633,16 @@ print(
 
 
 # ============================================================
-# TRUE DEAL WATCH
+# DEAL WATCH
 # ============================================================
 
 deal_candidates = []
 
-
 for item in known_shipping_items:
 
-    delivered_price = (
-        get_delivered_price(
-            item
-        )
+    delivered_price = get_delivered_price(
+        item
     )
-
 
     discount = (
         (
@@ -872,7 +651,6 @@ for item in known_shipping_items:
         )
         / SOLD_DELIVERED_MEDIAN_GBP
     ) * 100
-
 
     if discount >= WATCH_PERCENT:
 
@@ -909,39 +687,17 @@ for (
     item
 ) in deal_candidates:
 
+    if discount >= STRONG_DEAL_PERCENT:
+        level = "STRONG DEAL"
 
-    if (
-        discount
-        >= STRONG_DEAL_PERCENT
-    ):
-
-        deal_level = (
-            "STRONG DEAL"
-        )
-
-
-    elif (
-        discount
-        >= GOOD_DEAL_PERCENT
-    ):
-
-        deal_level = (
-            "GOOD DEAL"
-        )
-
+    elif discount >= GOOD_DEAL_PERCENT:
+        level = "GOOD DEAL"
 
     else:
-
-        deal_level = (
-            "WATCH"
-        )
-
+        level = "WATCH"
 
     print()
-
-    print(
-        deal_level
-    )
+    print(level)
 
     print(
         f"Item price: "
@@ -975,36 +731,31 @@ for (
 
 
 # ============================================================
-# EMAIL BODY
+# BUILD DAILY EMAIL
 # ============================================================
 
 def build_email_body():
 
     lines = []
 
-
     lines.append(
-        "Pokemon Deal Tracker"
+        "Pokemon Daily Market Report"
     )
 
     lines.append(
-        ""
+        "=" * 50
     )
 
     lines.append(
         CARD_NAME
     )
 
-    lines.append(
-        ""
-    )
-
+    lines.append("")
 
     lines.append(
         "30-day sold delivered median: "
         f"£{SOLD_DELIVERED_MEDIAN_GBP:,.2f}"
     )
-
 
     if live_median is not None:
 
@@ -1013,23 +764,56 @@ def build_email_body():
             f"£{live_median:,.2f}"
         )
 
+    if lowest_delivered is not None:
+
+        difference = (
+            (
+                lowest_delivered
+                - SOLD_DELIVERED_MEDIAN_GBP
+            )
+            / SOLD_DELIVERED_MEDIAN_GBP
+        ) * 100
+
+        lines.append(
+            "Lowest current delivered listing: "
+            f"£{lowest_delivered:,.2f}"
+        )
+
+        lines.append(
+            "Lowest vs sold median: "
+            f"{difference:+.1f}%"
+        )
+
+    lines.append("")
 
     lines.append(
-        ""
+        f"Exact PSA 10 listings found: "
+        f"{len(matched_items)}"
     )
 
+    lines.append(
+        f"Listings with usable shipping: "
+        f"{len(known_shipping_items)}"
+    )
+
+    lines.append("")
+
+    lines.append(
+        "DEAL STATUS"
+    )
+
+    lines.append(
+        "-" * 50
+    )
 
     if deal_candidates:
 
         lines.append(
-            f"Deals found: "
+            f"Qualifying deals found: "
             f"{len(deal_candidates)}"
         )
 
-        lines.append(
-            ""
-        )
-
+        lines.append("")
 
         for (
             delivered_price,
@@ -1037,72 +821,38 @@ def build_email_body():
             item
         ) in deal_candidates:
 
+            if discount >= STRONG_DEAL_PERCENT:
+                level = "STRONG DEAL"
 
-            if (
-                discount
-                >= STRONG_DEAL_PERCENT
-            ):
-
-                level = (
-                    "STRONG DEAL"
-                )
-
-
-            elif (
-                discount
-                >= GOOD_DEAL_PERCENT
-            ):
-
-                level = (
-                    "GOOD DEAL"
-                )
-
+            elif discount >= GOOD_DEAL_PERCENT:
+                level = "GOOD DEAL"
 
             else:
-
-                level = (
-                    "WATCH"
-                )
-
-
-            lines.append(
-                "=" * 50
-            )
-
+                level = "WATCH"
 
             lines.append(
                 level
             )
-
 
             lines.append(
                 f"Item: "
                 f"£{get_item_price(item):,.2f}"
             )
 
-
             lines.append(
                 f"Shipping: "
                 f"£{get_shipping_cost(item):,.2f}"
             )
-
 
             lines.append(
                 f"Delivered: "
                 f"£{delivered_price:,.2f}"
             )
 
-
             lines.append(
                 "Discount vs sold market: "
                 f"{discount:.1f}%"
             )
-
-
-            lines.append(
-                ""
-            )
-
 
             lines.append(
                 item.get(
@@ -1111,12 +861,6 @@ def build_email_body():
                 )
             )
 
-
-            lines.append(
-                ""
-            )
-
-
             lines.append(
                 item.get(
                     "itemWebUrl",
@@ -1124,23 +868,44 @@ def build_email_body():
                 )
             )
 
-
-            lines.append(
-                ""
-            )
-
+            lines.append("")
 
     else:
 
         lines.append(
-            "No qualifying deals were found."
+            "No listing is currently "
+            "10% or more below the sold median."
         )
 
+        lines.append("")
+
+        lines.append(
+            "This is still your normal daily "
+            "market report."
+        )
+
+    lines.append("")
 
     lines.append(
-        ""
+        "DEAL LEVELS"
     )
 
+    lines.append(
+        f"WATCH: delivered <= "
+        f"£{watch_price:,.2f}"
+    )
+
+    lines.append(
+        f"GOOD DEAL: delivered <= "
+        f"£{good_price:,.2f}"
+    )
+
+    lines.append(
+        f"STRONG DEAL: delivered <= "
+        f"£{strong_price:,.2f}"
+    )
+
+    lines.append("")
 
     lines.append(
         "Run time UTC: "
@@ -1151,131 +916,105 @@ def build_email_body():
         )
     )
 
+    lines.append("")
 
-    return "\n".join(
-        lines
+    lines.append(
+        "Note: sold benchmark is currently "
+        "updated manually."
     )
+
+    return "\n".join(lines)
 
 
 # ============================================================
-# SEND EMAIL
+# SEND DAILY EMAIL — ALWAYS
 # ============================================================
 
-should_send_email = (
-    bool(deal_candidates)
-    or force_email_test
-)
+print()
+print("=" * 72)
+print("DAILY EMAIL REPORT")
+print("=" * 72)
 
 
-if should_send_email:
+if (
+    not email_address
+    or not email_app_password
+):
 
-    print()
-    print("=" * 72)
-    print("EMAIL ALERT")
-    print("=" * 72)
-
-
-    if (
-        not email_address
-        or not email_app_password
-    ):
-
-        raise RuntimeError(
-            "EMAIL_ADDRESS or EMAIL_APP_PASSWORD is missing"
-        )
-
-
-    message = EmailMessage()
-
-
-    if deal_candidates:
-
-        best_discount = max(
-            deal[1]
-            for deal
-            in deal_candidates
-        )
-
-
-        subject = (
-            "Pokemon Deal Alert - "
-            f"{best_discount:.1f}% below sold market"
-        )
-
-
-    else:
-
-        subject = (
-            "Pokemon Deal Tracker - TEST EMAIL"
-        )
-
-
-    message[
-        "Subject"
-    ] = subject
-
-
-    message[
-        "From"
-    ] = email_address
-
-
-    message[
-        "To"
-    ] = email_address
-
-
-    message.set_content(
-        build_email_body()
+    raise RuntimeError(
+        "EMAIL_ADDRESS or "
+        "EMAIL_APP_PASSWORD is missing"
     )
 
 
-    context = (
-        ssl.create_default_context()
+message = EmailMessage()
+
+
+if deal_candidates:
+
+    best_discount = max(
+        deal[1]
+        for deal in deal_candidates
     )
 
-
-    try:
-
-        with smtplib.SMTP_SSL(
-            "smtp.gmail.com",
-            465,
-            context=context
-        ) as server:
-
-            server.login(
-                email_address,
-                email_app_password
-            )
-
-
-            server.send_message(
-                message
-            )
-
-
-        print(
-            "SUCCESS: Email alert sent."
-        )
-
-
-    except Exception as error:
-
-        print(
-            "ERROR sending email:"
-        )
-
-        print(error)
-
-        raise
-
+    subject = (
+        "Pokemon Daily Report - "
+        f"Deal found {best_discount:.1f}% below market"
+    )
 
 else:
 
-    print()
-    print(
-        "No deal found. No email sent."
+    subject = (
+        "Pokemon Daily Report - "
+        f"Lowest £{lowest_delivered:,.0f}"
+        if lowest_delivered is not None
+        else
+        "Pokemon Daily Market Report"
     )
+
+
+message["Subject"] = subject
+message["From"] = email_address
+message["To"] = email_address
+
+message.set_content(
+    build_email_body()
+)
+
+
+context = ssl.create_default_context()
+
+
+try:
+
+    with smtplib.SMTP_SSL(
+        "smtp.gmail.com",
+        465,
+        context=context
+    ) as server:
+
+        server.login(
+            email_address,
+            email_app_password
+        )
+
+        server.send_message(
+            message
+        )
+
+    print(
+        "SUCCESS: Daily email report sent."
+    )
+
+except Exception as error:
+
+    print(
+        "ERROR sending email:"
+    )
+
+    print(error)
+
+    raise
 
 
 # ============================================================
@@ -1286,7 +1025,6 @@ print()
 print("=" * 72)
 print("FILTER REPORT")
 print("=" * 72)
-
 
 for reason, count in sorted(
     rejection_reasons.items()
@@ -1303,26 +1041,29 @@ print("IMPORTANT")
 print("=" * 72)
 
 print(
-    "1. Deal score uses delivered price."
+    "1. Daily email is sent after every run."
 )
 
 print(
-    "2. Deal score compares against the "
-    "manual 30-day sold benchmark."
+    "2. No deal is required for an email."
 )
 
 print(
-    "3. The sold benchmark does not "
-    "automatically refresh yet."
+    "3. 10% / 15% / 20% thresholds are "
+    "used only for deal classification."
 )
 
 print(
-    "4. No eBay price history is saved."
+    "4. Delivered price includes available shipping."
 )
 
 print(
-    "5. Email is sent only when a deal "
-    "is found, unless test mode is enabled."
+    "5. Sold benchmark is currently "
+    "updated manually."
+)
+
+print(
+    "6. No eBay price history is saved."
 )
 
 print()
