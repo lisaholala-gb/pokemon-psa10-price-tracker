@@ -19,166 +19,439 @@ from datetime import datetime, timezone
 # ============================================================
 
 CARDS = [
+
+    # ========================================================
+    # 1. VAN GOGH PIKACHU
+    # ========================================================
+
     {
         "card_id": "pikachu-grey-felt-hat-085-psa10",
-        "name": "Pikachu with Grey Felt Hat #085 PSA 10",
+
+        "name":
+            "Pikachu with Grey Felt Hat #085 PSA 10",
+
         "search_terms": [
             "Pikachu Grey Felt Hat 085 PSA 10",
             "Pikachu Van Gogh 085 PSA 10",
+            "Pikachu SVP085 PSA 10",
         ],
+
+        "required_all": [
+            "pikachu",
+        ],
+
         "required_any": [
             "grey felt hat",
             "gray felt hat",
             "van gogh",
         ],
+
         "number_patterns": [
-            r"\b085\b",
-            r"\b85\b",
-            r"\bsvp[\s\-]*085\b",
-            r"\bsvp[\s\-]*85\b",
+            r"\b0?85\b",
+            r"\bsvp[\s\-]*0?85\b",
         ],
-        "required_all": [
-            "pikachu",
-        ],
+
         "excluded_terms": [],
+
+        # Manual 30-day sold delivered benchmark
         "sold_median": 1918.63,
     },
 
+
+    # ========================================================
+    # 2. PIKACHU 120/SV-P
+    # ========================================================
+
     {
         "card_id": "pikachu-120-sv-p-psa10",
-        "name": "Pikachu 120/SV-P Gym Event Campaign PSA 10",
+
+        "name":
+            "Pikachu 120/SV-P Gym Event Campaign PSA 10",
+
         "search_terms": [
             "Pikachu 120/SV-P PSA 10",
             "Pikachu 120 SV-P PSA 10",
-            "Pikachu Gym Event Campaign 120/SV-P PSA 10",
+            "Pikachu Gym Event 120/SV-P PSA 10",
         ],
-        "required_any": [
-            "gym event",
-            "sv-p",
-            "svp",
-        ],
-        "number_patterns": [
-            r"\b120[\s/\-]*sv[\s\-]*p\b",
-            r"\b120sv[\s\-]*p\b",
-        ],
+
         "required_all": [
             "pikachu",
         ],
+
+        "required_any": [
+            "120/sv-p",
+            "120 sv-p",
+            "gym event",
+            "gym campaign",
+        ],
+
+        "number_patterns": [
+            r"\b120[\s/\-]*sv[\s\-]*p\b",
+        ],
+
         "excluded_terms": [],
+
         "sold_median": None,
     },
 
+
+    # ========================================================
+    # 3. SWALLOWED UP PIKACHU 105/S-P
+    # ========================================================
+
     {
-        "card_id": "swallowed-up-pikachu-105-s-p-psa10",
-        "name": "Swallowed Up Pikachu 105/S-P PSA 10",
+        "card_id":
+            "swallowed-up-pikachu-105-s-p-psa10",
+
+        "name":
+            "Swallowed Up Pikachu 105/S-P PSA 10",
+
         "search_terms": [
             "Pikachu 105/S-P PSA 10",
             "Swallowed Up Pikachu 105/S-P PSA 10",
-            "Pikachu 105 S-P Koko PSA 10",
+            "Pikachu 105 S-P PSA 10",
         ],
-        "required_any": [
-            "swallowed up",
-            "105/s-p",
-            "105 s-p",
-            "koko",
-            "m23",
-        ],
-        "number_patterns": [
-            r"\b105[\s/\-]*s[\s\-]*p\b",
-        ],
+
         "required_all": [
             "pikachu",
         ],
+
+        "required_any": [
+            "105/s-p",
+            "105 s-p",
+            "swallowed up",
+        ],
+
+        "number_patterns": [
+            r"\b105[\s/\-]*s[\s\-]*p\b",
+        ],
+
         "excluded_terms": [],
+
         "sold_median": None,
     },
 
+
+    # ========================================================
+    # 4. TERAPAGOS EX 170/142
+    # ========================================================
+
     {
-        "card_id": "terapagos-ex-170-142-psa10",
-        "name": "Terapagos ex 170/142 Stellar Crown PSA 10",
+        "card_id":
+            "terapagos-ex-170-142-psa10",
+
+        "name":
+            "Terapagos ex 170/142 Stellar Crown PSA 10 - English",
+
         "search_terms": [
             "Terapagos ex 170/142 PSA 10",
             "Terapagos 170/142 Stellar Crown PSA 10",
             "Terapagos ex SIR 170/142 PSA 10",
         ],
-        "required_any": [
-            "stellar crown",
-            "sir",
-            "special illustration",
-            "170/142",
-        ],
-        "number_patterns": [
-            r"\b170[\s/\-]*142\b",
-        ],
+
         "required_all": [
             "terapagos",
         ],
+
+        "required_any": [
+            "170/142",
+            "170 142",
+            "stellar crown",
+            "special illustration",
+            "sir",
+        ],
+
+        "number_patterns": [
+            r"\b170[\s/\-]*142\b",
+        ],
+
         "excluded_terms": [
             "japanese",
-            "jp",
+            "jpn",
+            "jp psa",
         ],
+
         "sold_median": None,
     },
 
+
+    # ========================================================
+    # 5. MEOWTH EX 121/088
+    # ========================================================
+
     {
-        "card_id": "meowth-ex-121-088-psa10",
-        "name": "Meowth ex 121/088 Perfect Order PSA 10",
+        "card_id":
+            "meowth-ex-121-088-psa10",
+
+        "name":
+            "Meowth ex 121/088 PSA 10",
+
         "search_terms": [
             "Meowth ex 121/088 PSA 10",
-            "Meowth 121/088 Perfect Order PSA 10",
-            "Meowth ex SIR 121/088 PSA 10",
+            "Meowth 121/088 PSA 10",
+            "Meowth ex 121 088 PSA 10",
         ],
-        "required_any": [
-            "perfect order",
-            "sir",
-            "special illustration",
-            "121/088",
-        ],
-        "number_patterns": [
-            r"\b121[\s/\-]*088\b",
-            r"\b121[\s/\-]*88\b",
-        ],
+
         "required_all": [
             "meowth",
         ],
-        "excluded_terms": [
-            "japanese",
-            "jp",
+
+        "required_any": [
+            "121/088",
+            "121/88",
+            "121 088",
+            "special illustration",
+            "sir",
         ],
+
+        "number_patterns": [
+            r"\b121[\s/\-]*0?88\b",
+        ],
+
+        "excluded_terms": [],
+
         "sold_median": None,
     },
 
+
+    # ========================================================
+    # 6. SLOWPOKE & PSYDUCK GX 35/236
+    # ========================================================
+
     {
-        "card_id": "slowpoke-psyduck-gx-35-236-psa10",
-        "name": "Slowpoke & Psyduck GX 35/236 PSA 10",
+        "card_id":
+            "slowpoke-psyduck-gx-35-236-psa10",
+
+        "name":
+            "Slowpoke & Psyduck GX 35/236 PSA 10",
+
         "search_terms": [
             "Slowpoke Psyduck GX 35/236 PSA 10",
             "Slowpoke & Psyduck GX 35/236 PSA 10",
             "Slowpoke Psyduck Unified Minds 35/236 PSA 10",
         ],
-        "required_any": [
-            "unified minds",
-            "35/236",
-            "gx",
-        ],
-        "number_patterns": [
-            r"\b35[\s/\-]*236\b",
-        ],
+
         "required_all": [
             "slowpoke",
             "psyduck",
         ],
+
+        "required_any": [
+            "35/236",
+            "35 236",
+            "unified minds",
+            "gx",
+        ],
+
+        "number_patterns": [
+            r"\b35[\s/\-]*236\b",
+        ],
+
         "excluded_terms": [
             "218/236",
             "218 236",
-            "alternate art",
             "alt art",
-            "japanese",
+            "alternate art",
         ],
+
+        "sold_median": None,
+    },
+
+
+    # ========================================================
+    # 7. CHARIZARD EX 199/165
+    # ========================================================
+
+    {
+        "card_id":
+            "charizard-ex-199-165-psa10",
+
+        "name":
+            "Charizard ex 199/165 Pokemon 151 PSA 10 - English",
+
+        "search_terms": [
+            "Charizard ex 199/165 PSA 10",
+            "Charizard 199/165 Pokemon 151 PSA 10",
+            "Charizard ex SIR 199/165 PSA 10",
+        ],
+
+        "required_all": [
+            "charizard",
+        ],
+
+        "required_any": [
+            "199/165",
+            "199 165",
+            "pokemon 151",
+            "special illustration",
+            "sir",
+        ],
+
+        "number_patterns": [
+            r"\b199[\s/\-]*165\b",
+        ],
+
+        "excluded_terms": [
+            "japanese",
+            "jpn",
+            "199/108",
+            "199/197",
+            "199/189",
+        ],
+
+        "sold_median": None,
+    },
+
+
+    # ========================================================
+    # 8. LATIAS & LATIOS GX 170/181
+    # ========================================================
+
+    {
+        "card_id":
+            "latias-latios-gx-170-181-psa10",
+
+        "name":
+            "Latias & Latios GX 170/181 Team Up PSA 10",
+
+        "search_terms": [
+            "Latias Latios GX 170/181 PSA 10",
+            "Latias & Latios GX 170/181 PSA 10",
+            "Latias Latios Team Up 170/181 PSA 10",
+            "Latias Latios Alt Art PSA 10 170/181",
+        ],
+
+        "required_all": [
+            "latias",
+            "latios",
+        ],
+
+        "required_any": [
+            "170/181",
+            "170 181",
+            "team up",
+            "alt art",
+            "alternate art",
+        ],
+
+        "number_patterns": [
+            r"\b170[\s/\-]*181\b",
+        ],
+
+        "excluded_terms": [
+            "169/181",
+            "169 181",
+            "113/181",
+            "113 181",
+            "japanese",
+            "jpn",
+        ],
+
+        "sold_median": None,
+    },
+
+
+    # ========================================================
+    # 9. PIKACHU 227/S-P JAPAN POST
+    # ========================================================
+
+    {
+        "card_id":
+            "pikachu-227-s-p-stamp-box-psa10",
+
+        "name":
+            "Pikachu 227/S-P Japan Post Stamp Box PSA 10",
+
+        "search_terms": [
+            "Pikachu 227/S-P PSA 10",
+            "Pikachu 227 S-P PSA 10",
+            "Pikachu Stamp Box 227/S-P PSA 10",
+            "Pikachu Japan Post 227/S-P PSA 10",
+        ],
+
+        "required_all": [
+            "pikachu",
+        ],
+
+        "required_any": [
+            "227/s-p",
+            "227 s-p",
+            "stamp box",
+            "japan post",
+        ],
+
+        "number_patterns": [
+            r"\b227[\s/\-]*s[\s\-]*p\b",
+        ],
+
+        "excluded_terms": [
+            "cramorant",
+            "226/s-p",
+            "226 s-p",
+            "box only",
+        ],
+
+        "sold_median": None,
+    },
+
+
+    # ========================================================
+    # 10. MEGA CHARIZARD X EX 125/094
+    # ========================================================
+
+    {
+        "card_id":
+            "mega-charizard-x-ex-125-094-psa10",
+
+        "name":
+            "Mega Charizard X ex 125/094 PSA 10 - English",
+
+        "search_terms": [
+            "Mega Charizard X ex 125/094 PSA 10",
+            "Mega Charizard 125/094 PSA 10",
+            "Mega Charizard X ex SIR 125/094 PSA 10",
+            "Mega Charizard X 125 094 PSA 10",
+        ],
+
+        "required_all": [
+            "charizard",
+        ],
+
+        "required_any": [
+            "125/094",
+            "125/94",
+            "125 094",
+            "mega charizard x",
+            "special illustration",
+            "sir",
+        ],
+
+        "number_patterns": [
+            r"\b125[\s/\-]*0?94\b",
+        ],
+
+        "excluded_terms": [
+            "japanese",
+            "jpn",
+            "110/080",
+            "110 080",
+            "109/094",
+            "109 094",
+            "130/094",
+            "130 094",
+        ],
+
         "sold_median": None,
     },
 ]
 
+
+# ============================================================
+# DEAL SETTINGS
+#
+# Only cards with sold_median set will use these.
+# Currently only Van Gogh Pikachu.
+# ============================================================
 
 WATCH_PERCENT = 10
 GOOD_DEAL_PERCENT = 15
@@ -186,7 +459,7 @@ STRONG_DEAL_PERCENT = 20
 
 
 # ============================================================
-# GITHUB SECRETS
+# READ GITHUB SECRETS
 # ============================================================
 
 client_id = os.environ["EBAY_CLIENT_ID"]
@@ -205,18 +478,25 @@ email_address = os.environ.get(
 email_app_password = os.environ.get(
     "EMAIL_APP_PASSWORD",
     ""
-).replace(" ", "").strip()
+).replace(
+    " ",
+    ""
+).strip()
 
 
 # ============================================================
 # EBAY AUTHENTICATION
 # ============================================================
 
-credentials = f"{client_id}:{client_secret}"
+credentials = (
+    f"{client_id}:{client_secret}"
+)
 
-encoded_credentials = base64.b64encode(
-    credentials.encode()
-).decode()
+encoded_credentials = (
+    base64.b64encode(
+        credentials.encode()
+    ).decode()
+)
 
 token_url = (
     "https://api.ebay.com/"
@@ -224,8 +504,11 @@ token_url = (
 )
 
 token_data = urllib.parse.urlencode({
-    "grant_type": "client_credentials",
-    "scope": "https://api.ebay.com/oauth/api_scope",
+    "grant_type":
+        "client_credentials",
+
+    "scope":
+        "https://api.ebay.com/oauth/api_scope",
 }).encode()
 
 token_request = urllib.request.Request(
@@ -254,29 +537,56 @@ try:
             response.read().decode()
         )
 
-    access_token = token_result["access_token"]
+    access_token = token_result[
+        "access_token"
+    ]
 
-    print("SUCCESS: Connected to eBay Production")
+    print(
+        "SUCCESS: Connected to eBay Production"
+    )
 
 except urllib.error.HTTPError as error:
 
-    print("ERROR getting eBay access token")
-    print("HTTP status:", error.code)
-    print(error.read().decode())
+    print(
+        "ERROR getting eBay access token"
+    )
+
+    print(
+        "HTTP status:",
+        error.code
+    )
+
+    print(
+        error.read().decode()
+    )
+
     raise
 
 
 # ============================================================
-# HELPERS
+# TEXT NORMALISATION
 # ============================================================
 
 def normalize(text):
 
-    text = str(text).lower()
+    text = str(
+        text
+    ).lower()
 
-    text = text.replace("–", "-")
-    text = text.replace("—", "-")
-    text = text.replace("’", "'")
+    text = text.replace(
+        "–",
+        "-"
+    )
+
+    text = text.replace(
+        "—",
+        "-"
+    )
+
+    text = text.replace(
+        "’",
+        "'"
+    )
 
     text = re.sub(
         r"\s+",
@@ -287,11 +597,20 @@ def normalize(text):
     return text.strip()
 
 
+# ============================================================
+# PRICE HELPERS
+# ============================================================
+
 def get_item_price(item):
 
     try:
+
         return float(
-            item["price"]["value"]
+            item[
+                "price"
+            ][
+                "value"
+            ]
         )
 
     except (
@@ -299,6 +618,7 @@ def get_item_price(item):
         ValueError,
         TypeError
     ):
+
         return None
 
 
@@ -331,24 +651,35 @@ def get_shipping_cost(item):
             value is None
             or currency != "GBP"
         ):
+
             continue
 
         try:
-            cost = float(value)
+
+            cost = float(
+                value
+            )
 
         except (
             ValueError,
             TypeError
         ):
+
             continue
 
         if cost >= 0:
-            costs.append(cost)
+
+            costs.append(
+                cost
+            )
 
     if not costs:
+
         return None
 
-    return min(costs)
+    return min(
+        costs
+    )
 
 
 def get_delivered_price(item):
@@ -365,6 +696,7 @@ def get_delivered_price(item):
         item_price is None
         or shipping is None
     ):
+
         return None
 
     return (
@@ -397,38 +729,66 @@ def is_target_card(
     )
 
 
-    # Must explicitly be PSA 10
+    # --------------------------------------------------------
+    # PSA 10 REQUIRED
+    # --------------------------------------------------------
+
     if not re.search(
         r"\bpsa[\s\-]*10\b",
         title
     ):
-        return False, "not_psa10"
+
+        return (
+            False,
+            "not_psa10"
+        )
 
 
-    # Required words
-    for term in card[
-        "required_all"
-    ]:
+    # --------------------------------------------------------
+    # REQUIRED WORDS
+    # --------------------------------------------------------
 
-        if normalize(term) not in title:
-            return False, "missing_required_term"
+    for term in card.get(
+        "required_all",
+        []
+    ):
+
+        if normalize(
+            term
+        ) not in title:
+
+            return (
+                False,
+                "missing_required_term"
+            )
 
 
-    # Correct card number
+    # --------------------------------------------------------
+    # CARD NUMBER
+    # --------------------------------------------------------
+
     if not any(
         re.search(
             pattern,
             title
         )
         for pattern
-        in card[
-            "number_patterns"
-        ]
+        in card.get(
+            "number_patterns",
+            []
+        )
     ):
-        return False, "wrong_card_number"
+
+        return (
+            False,
+            "wrong_card_number"
+        )
 
 
-    # At least one identity hint
+    # --------------------------------------------------------
+    # IDENTITY TERMS
+    # --------------------------------------------------------
+
     required_any = card.get(
         "required_any",
         []
@@ -437,19 +797,30 @@ def is_target_card(
     if required_any:
 
         if not any(
-            normalize(term) in title
+            normalize(
+                term
+            ) in title
+
             for term
             in required_any
         ):
-            return False, "wrong_card_identity"
+
+            return (
+                False,
+                "wrong_card_identity"
+            )
 
 
-    # Other graders
+    # --------------------------------------------------------
+    # OTHER GRADERS
+    # --------------------------------------------------------
+
     other_graders = [
         "ace 10",
         "ace grading",
         "cgc 10",
         "cgc pristine",
+        "cgc gem",
         "bgs",
         "beckett",
         "sgc",
@@ -461,10 +832,17 @@ def is_target_card(
         for grader
         in other_graders
     ):
-        return False, "other_grader"
+
+        return (
+            False,
+            "other_grader"
+        )
 
 
-    # Generic bad products
+    # --------------------------------------------------------
+    # GENERIC EXCLUSIONS
+    # --------------------------------------------------------
+
     generic_exclusions = [
         "mystery",
         "proxy",
@@ -499,30 +877,55 @@ def is_target_card(
         for term
         in generic_exclusions
     ):
-        return False, "excluded_product"
+
+        return (
+            False,
+            "excluded_product"
+        )
 
 
-    # Card-specific exclusions
+    # --------------------------------------------------------
+    # CARD-SPECIFIC EXCLUSIONS
+    # --------------------------------------------------------
+
     if any(
-        normalize(term) in title
+        normalize(
+            term
+        ) in title
+
         for term
         in card.get(
             "excluded_terms",
             []
         )
     ):
-        return False, "wrong_variant"
+
+        return (
+            False,
+            "wrong_variant"
+        )
 
 
-    # Graded condition
+    # --------------------------------------------------------
+    # GRADED CONDITION
+    # --------------------------------------------------------
+
     if (
         condition
-        and "graded" not in condition
+        and "graded"
+        not in condition
     ):
-        return False, "not_graded_condition"
+
+        return (
+            False,
+            "not_graded_condition"
+        )
 
 
-    # Fixed-price only
+    # --------------------------------------------------------
+    # FIXED PRICE ONLY
+    # --------------------------------------------------------
+
     buying_options = item.get(
         "buyingOptions",
         []
@@ -533,20 +936,33 @@ def is_target_card(
         and "FIXED_PRICE"
         not in buying_options
     ):
-        return False, "not_fixed_price"
+
+        return (
+            False,
+            "not_fixed_price"
+        )
 
 
-    # GBP price
+    # --------------------------------------------------------
+    # GBP PRICE REQUIRED
+    # --------------------------------------------------------
+
     price_data = item.get(
         "price",
         {}
     )
 
     if (
-        price_data.get("currency")
+        price_data.get(
+            "currency"
+        )
         != "GBP"
     ):
-        return False, "not_gbp"
+
+        return (
+            False,
+            "not_gbp"
+        )
 
 
     item_price = get_item_price(
@@ -557,10 +973,17 @@ def is_target_card(
         item_price is None
         or item_price <= 0
     ):
-        return False, "invalid_price"
+
+        return (
+            False,
+            "invalid_price"
+        )
 
 
-    return True, "accepted"
+    return (
+        True,
+        "accepted"
+    )
 
 
 # ============================================================
@@ -572,10 +995,24 @@ def search_card(card):
     all_items = {}
 
     print()
-    print("=" * 72)
-    print(card["name"])
-    print("=" * 72)
+    print(
+        "=" * 72
+    )
 
+    print(
+        card[
+            "name"
+        ]
+    )
+
+    print(
+        "=" * 72
+    )
+
+
+    # --------------------------------------------------------
+    # MULTIPLE SEARCH TERMS
+    # --------------------------------------------------------
 
     for search_term in card[
         "search_terms"
@@ -585,17 +1022,25 @@ def search_card(card):
             f"Searching: {search_term}"
         )
 
+
         params = {
-            "q": search_term,
-            "limit": "50",
-            "filter": "deliveryCountry:GB",
+            "q":
+                search_term,
+
+            "limit":
+                "50",
+
+            "filter":
+                "deliveryCountry:GB",
         }
+
 
         query_string = (
             urllib.parse.urlencode(
                 params
             )
         )
+
 
         search_url = (
             "https://api.ebay.com/"
@@ -604,6 +1049,7 @@ def search_card(card):
             f"{query_string}"
         )
 
+
         request = (
             urllib.request.Request(
                 search_url,
@@ -611,16 +1057,22 @@ def search_card(card):
             )
         )
 
+
         request.add_header(
             "Authorization",
             f"Bearer {access_token}"
         )
+
 
         request.add_header(
             "X-EBAY-C-MARKETPLACE-ID",
             "EBAY_GB"
         )
 
+
+        # ----------------------------------------------------
+        # BUYER LOCATION FOR SHIPPING
+        # ----------------------------------------------------
 
         if buyer_postcode:
 
@@ -634,6 +1086,7 @@ def search_card(card):
                 )
             )
 
+
             request.add_header(
                 "X-EBAY-C-ENDUSERCTX",
                 (
@@ -642,6 +1095,10 @@ def search_card(card):
                 )
             )
 
+
+        # ----------------------------------------------------
+        # API REQUEST
+        # ----------------------------------------------------
 
         try:
 
@@ -653,10 +1110,12 @@ def search_card(card):
                     response.read().decode()
                 )
 
+
             search_items = result.get(
                 "itemSummaries",
                 []
             )
+
 
             print(
                 f"Raw results: "
@@ -664,6 +1123,7 @@ def search_card(card):
             )
 
 
+            # Deduplicate item IDs
             for item in search_items:
 
                 item_id = item.get(
@@ -671,6 +1131,7 @@ def search_card(card):
                 )
 
                 if item_id:
+
                     all_items[
                         item_id
                     ] = item
@@ -694,9 +1155,9 @@ def search_card(card):
             raise
 
 
-    # --------------------------------------------------------
-    # MATCH
-    # --------------------------------------------------------
+    # ========================================================
+    # MATCH LISTINGS
+    # ========================================================
 
     matched_items = []
 
@@ -712,6 +1173,7 @@ def search_card(card):
             )
         )
 
+
         if matched:
 
             matched_items.append(
@@ -725,9 +1187,9 @@ def search_card(card):
             ] += 1
 
 
-    # --------------------------------------------------------
-    # SHIPPING
-    # --------------------------------------------------------
+    # ========================================================
+    # DELIVERED PRICES
+    # ========================================================
 
     delivered_items = []
 
@@ -742,6 +1204,7 @@ def search_card(card):
             )
         )
 
+
         if delivered_price is None:
 
             unknown_shipping_items.append(
@@ -750,30 +1213,36 @@ def search_card(card):
 
         else:
 
-            delivered_items.append(
-                {
-                    "item": item,
-                    "delivered_price": delivered_price,
-                }
-            )
+            delivered_items.append({
+                "item":
+                    item,
+
+                "delivered_price":
+                    delivered_price,
+            })
 
 
     delivered_items.sort(
-        key=lambda x:
-        x["delivered_price"]
+        key=lambda row:
+            row[
+                "delivered_price"
+            ]
     )
 
 
     delivered_prices = [
-        row["delivered_price"]
+        row[
+            "delivered_price"
+        ]
+
         for row
         in delivered_items
     ]
 
 
-    # --------------------------------------------------------
-    # MARKET METRICS
-    # --------------------------------------------------------
+    # ========================================================
+    # METRICS
+    # ========================================================
 
     if delivered_prices:
 
@@ -796,9 +1265,9 @@ def search_card(card):
         average = None
 
 
-    # --------------------------------------------------------
-    # DEAL STATUS
-    # --------------------------------------------------------
+    # ========================================================
+    # DEAL ANALYSIS
+    # ========================================================
 
     deal_candidates = []
 
@@ -815,6 +1284,7 @@ def search_card(card):
                 "delivered_price"
             ]
 
+
             discount = (
                 (
                     sold_median
@@ -829,6 +1299,7 @@ def search_card(card):
                 >= WATCH_PERCENT
             ):
 
+
                 if (
                     discount
                     >= STRONG_DEAL_PERCENT
@@ -837,6 +1308,7 @@ def search_card(card):
                     level = (
                         "STRONG DEAL"
                     )
+
 
                 elif (
                     discount
@@ -847,6 +1319,7 @@ def search_card(card):
                         "GOOD DEAL"
                     )
 
+
                 else:
 
                     level = (
@@ -855,41 +1328,73 @@ def search_card(card):
 
 
                 deal_candidates.append({
-                    "level": level,
-                    "discount": discount,
-                    "delivered_price": delivered_price,
-                    "item": row["item"],
+                    "level":
+                        level,
+
+                    "discount":
+                        discount,
+
+                    "delivered_price":
+                        delivered_price,
+
+                    "item":
+                        row[
+                            "item"
+                        ],
                 })
 
 
     return {
-        "card": card,
-        "raw_count": len(
-            all_items
-        ),
-        "matched_count": len(
-            matched_items
-        ),
-        "shipping_count": len(
-            delivered_items
-        ),
-        "unknown_shipping_count": len(
-            unknown_shipping_items
-        ),
-        "lowest": lowest,
-        "median": median,
-        "average": average,
-        "delivered_items": delivered_items,
-        "deal_candidates": deal_candidates,
-        "rejection_reasons": rejection_reasons,
+
+        "card":
+            card,
+
+        "raw_count":
+            len(
+                all_items
+            ),
+
+        "matched_count":
+            len(
+                matched_items
+            ),
+
+        "shipping_count":
+            len(
+                delivered_items
+            ),
+
+        "unknown_shipping_count":
+            len(
+                unknown_shipping_items
+            ),
+
+        "lowest":
+            lowest,
+
+        "median":
+            median,
+
+        "average":
+            average,
+
+        "delivered_items":
+            delivered_items,
+
+        "deal_candidates":
+            deal_candidates,
+
+        "rejection_reasons":
+            rejection_reasons,
     }
 
 
 # ============================================================
-# RUN ALL CARDS
+# RUN ALL 10 CARDS
 # ============================================================
 
 results = []
+
 
 for card in CARDS:
 
@@ -903,13 +1408,21 @@ for card in CARDS:
 
 
 # ============================================================
-# CONSOLE REPORT
+# CONSOLE SUMMARY
 # ============================================================
 
 print()
-print("=" * 72)
-print("DAILY MULTI-CARD MARKET REPORT")
-print("=" * 72)
+print(
+    "=" * 72
+)
+
+print(
+    "POKEMON PSA 10 DAILY MARKET REPORT"
+)
+
+print(
+    "=" * 72
+)
 
 
 for index, result in enumerate(
@@ -922,9 +1435,12 @@ for index, result in enumerate(
     ]
 
     print()
+
     print(
-        f"{index}. {card['name']}"
+        f"{index}. "
+        f"{card['name']}"
     )
+
 
     print(
         f"Exact listings: "
@@ -932,9 +1448,12 @@ for index, result in enumerate(
     )
 
 
-    if result[
-        "median"
-    ] is not None:
+    if (
+        result[
+            "median"
+        ]
+        is not None
+    ):
 
         print(
             f"Lowest delivered: "
@@ -973,17 +1492,22 @@ for index, result in enumerate(
 
 
         if (
-            result["lowest"]
+            result[
+                "lowest"
+            ]
             is not None
         ):
 
             difference = (
                 (
-                    result["lowest"]
+                    result[
+                        "lowest"
+                    ]
                     - sold_median
                 )
                 / sold_median
             ) * 100
+
 
             print(
                 "Lowest vs sold benchmark: "
@@ -999,44 +1523,49 @@ for index, result in enumerate(
             result[
                 "deal_candidates"
             ],
-            key=lambda x:
-            x["delivered_price"]
+
+            key=lambda item:
+                item[
+                    "delivered_price"
+                ]
         )
 
+
         print(
-            f"Status: "
+            f"STATUS: "
             f"{best['level']}"
         )
 
+
+    elif sold_median:
+
+        print(
+            "STATUS: NORMAL"
+        )
+
+
     else:
 
-        if sold_median:
-
-            print(
-                "Status: NORMAL"
-            )
-
-        else:
-
-            print(
-                "Status: LIVE TRACKING ONLY"
-            )
+        print(
+            "STATUS: LIVE TRACKING"
+        )
 
 
 # ============================================================
-# BUILD DAILY EMAIL
+# EMAIL REPORT
 # ============================================================
 
 def build_email_body():
 
     lines = []
 
+
     lines.append(
         "Pokemon PSA 10 Daily Market Report"
     )
 
     lines.append(
-        "=" * 55
+        "=" * 60
     )
 
     lines.append(
@@ -1053,13 +1582,17 @@ def build_email_body():
             "card"
         ]
 
-        lines.append(
-            f"{index}. {card['name']}"
-        )
 
         lines.append(
-            "-" * 55
+            f"{index}. "
+            f"{card['name']}"
         )
+
+
+        lines.append(
+            "-" * 60
+        )
+
 
         lines.append(
             f"Exact listings: "
@@ -1067,8 +1600,14 @@ def build_email_body():
         )
 
 
+        # ----------------------------------------------------
+        # LIVE MARKET
+        # ----------------------------------------------------
+
         if (
-            result["median"]
+            result[
+                "median"
+            ]
             is not None
         ):
 
@@ -1077,10 +1616,12 @@ def build_email_body():
                 f"£{result['lowest']:,.2f}"
             )
 
+
             lines.append(
                 f"Median delivered: "
                 f"£{result['median']:,.2f}"
             )
+
 
             lines.append(
                 f"Average delivered: "
@@ -1088,27 +1629,32 @@ def build_email_body():
             )
 
 
-            cheapest = (
-                result[
-                    "delivered_items"
-                ][0]
-            )
+            # Cheapest listing
+            cheapest = result[
+                "delivered_items"
+            ][0]
 
-            cheapest_item = (
-                cheapest["item"]
-            )
+
+            cheapest_item = cheapest[
+                "item"
+            ]
+
 
             lines.append(
                 ""
             )
 
-            lines.append(
-                "Cheapest current listing:"
-            )
 
             lines.append(
+                "CHEAPEST LISTING"
+            )
+
+
+            lines.append(
+                f"Delivered: "
                 f"£{cheapest['delivered_price']:,.2f}"
             )
+
 
             lines.append(
                 cheapest_item.get(
@@ -1117,6 +1663,7 @@ def build_email_body():
                 )
             )
 
+
             lines.append(
                 cheapest_item.get(
                     "itemWebUrl",
@@ -1124,12 +1671,17 @@ def build_email_body():
                 )
             )
 
+
         else:
 
             lines.append(
                 "No usable live listings."
             )
 
+
+        # ----------------------------------------------------
+        # SOLD BENCHMARK
+        # ----------------------------------------------------
 
         sold_median = card.get(
             "sold_median"
@@ -1142,6 +1694,7 @@ def build_email_body():
                 ""
             )
 
+
             lines.append(
                 f"30-day sold benchmark: "
                 f"£{sold_median:,.2f}"
@@ -1149,183 +1702,4 @@ def build_email_body():
 
 
             if (
-                result["lowest"]
-                is not None
-            ):
-
-                difference = (
-                    (
-                        result["lowest"]
-                        - sold_median
-                    )
-                    / sold_median
-                ) * 100
-
-                lines.append(
-                    "Lowest vs sold benchmark: "
-                    f"{difference:+.1f}%"
-                )
-
-
-            if (
                 result[
-                    "deal_candidates"
-                ]
-            ):
-
-                lines.append(
-                    ""
-                )
-
-                lines.append(
-                    "DEALS"
-                )
-
-
-                for deal in result[
-                    "deal_candidates"
-                ]:
-
-                    item = deal[
-                        "item"
-                    ]
-
-                    lines.append(
-                        f"{deal['level']} | "
-                        f"£{deal['delivered_price']:,.2f} | "
-                        f"{deal['discount']:.1f}% "
-                        "below sold benchmark"
-                    )
-
-                    lines.append(
-                        item.get(
-                            "itemWebUrl",
-                            ""
-                        )
-                    )
-
-
-        else:
-
-            lines.append(
-                "Tracking mode: "
-                "live asking prices only"
-            )
-
-
-        lines.append(
-            ""
-        )
-
-        lines.append(
-            ""
-        )
-
-
-    lines.append(
-        "Run time UTC: "
-        + datetime.now(
-            timezone.utc
-        ).strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
-    )
-
-    lines.append(
-        ""
-    )
-
-    lines.append(
-        "Note: only Van Gogh Pikachu "
-        "currently uses a sold-price benchmark."
-    )
-
-
-    return "\n".join(
-        lines
-    )
-
-
-# ============================================================
-# SEND DAILY EMAIL
-# ============================================================
-
-print()
-print("=" * 72)
-print("EMAIL")
-print("=" * 72)
-
-
-if (
-    not email_address
-    or not email_app_password
-):
-
-    raise RuntimeError(
-        "EMAIL_ADDRESS or "
-        "EMAIL_APP_PASSWORD is missing"
-    )
-
-
-message = EmailMessage()
-
-message[
-    "Subject"
-] = (
-    "Pokemon PSA 10 Daily Market Report"
-)
-
-message[
-    "From"
-] = email_address
-
-message[
-    "To"
-] = email_address
-
-message.set_content(
-    build_email_body()
-)
-
-
-context = (
-    ssl.create_default_context()
-)
-
-
-try:
-
-    with smtplib.SMTP_SSL(
-        "smtp.gmail.com",
-        465,
-        context=context
-    ) as server:
-
-        server.login(
-            email_address,
-            email_app_password
-        )
-
-        server.send_message(
-            message
-        )
-
-    print(
-        "SUCCESS: Daily email sent."
-    )
-
-except Exception as error:
-
-    print(
-        "ERROR sending email:"
-    )
-
-    print(error)
-
-    raise
-
-
-print()
-print(
-    "Tracker completed successfully."
-)
